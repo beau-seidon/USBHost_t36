@@ -690,13 +690,13 @@ class USBHIDParser : public USBDriver {
 public:
     USBHIDParser(USBHost &host) : hidTimer(this) { init(); }
     static void driver_ready_for_hid_collection(USBHIDInput *driver);
-	bool sendPacket(const uint8_t *buffer, int cb=-1);
-	void setTXBuffers(uint8_t *buffer1, uint8_t *buffer2, uint8_t cb, 
-		// extended to optionaly allow more buffers. 
-		uint8_t *buffer3=nullptr, uint8_t* buffer4=nullptr);
-	void setRXBuffers(uint8_t *buffer1, uint8_t *buffer2, uint8_t cb,
-		// extended to optionaly allow more buffers. 
-		uint8_t *buffer3=nullptr, uint8_t* buffer4=nullptr);
+    bool sendPacket(const uint8_t *buffer, int cb=-1);
+    void setTXBuffers(uint8_t *buffer1, uint8_t *buffer2, uint8_t cb,
+        // extended to optionaly allow more buffers.
+        uint8_t *buffer3=nullptr, uint8_t* buffer4=nullptr);
+    void setRXBuffers(uint8_t *buffer1, uint8_t *buffer2, uint8_t cb,
+        // extended to optionaly allow more buffers.
+        uint8_t *buffer3=nullptr, uint8_t* buffer4=nullptr);
 
     bool sendControlPacket(uint32_t bmRequestType, uint32_t bRequest,
                            uint32_t wValue, uint32_t wIndex, uint32_t wLength, void *buf);
@@ -730,7 +730,7 @@ protected:
     void init();
 
 
-	uint8_t activeSendMask(void) {return _tx_state;} 
+    uint8_t activeSendMask(void) {return _tx_state;}
 
 private:
     Pipe_t *in_pipe;
@@ -750,18 +750,18 @@ private:
     Pipe_t mypipes[3] __attribute__ ((aligned(32)));
     Transfer_t mytransfers[5] __attribute__ ((aligned(32)));
     strbuf_t mystring_bufs[1];
-	uint8_t *_rx1 = nullptr;
-	uint8_t *_rx2 = nullptr;
-	uint8_t *_rx3 = nullptr;
-	uint8_t *_rx4 = nullptr;
-	uint8_t *_tx[4] = {nullptr, nullptr, nullptr, nullptr};
-	uint8_t _tx_state = 0;
-	uint8_t _tx_mask = 3;
+    uint8_t *_rx1 = nullptr;
+    uint8_t *_rx2 = nullptr;
+    uint8_t *_rx3 = nullptr;
+    uint8_t *_rx4 = nullptr;
+    uint8_t *_tx[4] = {nullptr, nullptr, nullptr, nullptr};
+    uint8_t _tx_state = 0;
+    uint8_t _tx_mask = 3;
     bool hid_driver_claimed_control_ = false;
     USBDriverTimer hidTimer;
-	uint8_t _bigBuffer[800 + 64+64];
-	uint8_t *_bigBufferEnd = _bigBuffer + sizeof(_bigBuffer);
-	uint16_t _big_buffer_size = sizeof(_bigBuffer);
+    uint8_t _bigBuffer[800 + 64+64];
+    uint8_t *_bigBufferEnd = _bigBuffer + sizeof(_bigBuffer);
+    uint16_t _big_buffer_size = sizeof(_bigBuffer);
     uint8_t bInterfaceNumber = 0;
 };
 
@@ -1015,7 +1015,7 @@ public:
     // Retuns bit mask showing which axis are defined for the current joystick
     uint64_t axisMask() {return axis_mask_;}
 
-    // returns a bit mask showing which axis have changed since the last read. 
+    // returns a bit mask showing which axis have changed since the last read.
     uint64_t axisChangedMask() { return axis_changed_mask_;}
     uint64_t axisChangeNotifyMask() {return axis_change_notify_mask_;}
     void     axisChangeNotifyMask(uint64_t notify_mask) {axis_change_notify_mask_ = notify_mask;}
@@ -1034,9 +1034,9 @@ public:
 
     bool PS4GetCurrentPairing(uint8_t* bdaddr);
     bool PS4Pair(uint8_t* bdaddr);
-	
-	void sw_sendCmd(uint8_t cmd, uint8_t *data, uint16_t size, uint32_t timeout=0);
-	bool sw_getIMUCalValues(float *accel, float *gyro);
+
+    void sw_sendCmd(uint8_t cmd, uint8_t *data, uint16_t size, uint32_t timeout=0);
+    bool sw_getIMUCalValues(float *accel, float *gyro);
 
 protected:
     // From USBDriver
@@ -1089,23 +1089,23 @@ private:
     bool transmitPS3MotionUserFeedbackMsg();
     bool mapNameToJoystickType(const uint8_t *remoteName);
     //void sw_sendCmd(uint8_t cmd, uint8_t *data, uint16_t size);
-	//void sw_sendCmdUSB(uint8_t cmd, uint8_t *data, uint8_t size);
+    //void sw_sendCmdUSB(uint8_t cmd, uint8_t *data, uint8_t size);
     void sw_sendCmdUSB(uint8_t cmd, uint32_t timeout);
-	void sw_sendSubCmdUSB(uint8_t sub_cmd, uint8_t *data, uint8_t size, uint32_t timeout = 0);
-	void sw_parseAckMsg(const uint8_t *buf_);
+    void sw_sendSubCmdUSB(uint8_t sub_cmd, uint8_t *data, uint8_t size, uint32_t timeout = 0);
+    void sw_parseAckMsg(const uint8_t *buf_);
     bool sw_handle_usb_init_of_joystick(uint8_t *buffer, uint16_t cb, bool timer_event);
     bool sw_handle_bt_init_of_joystick(const uint8_t *data, uint16_t length, bool timer_event);
     inline void sw_update_axis(uint8_t axis_index, int new_value);
     bool sw_process_HID_data(const uint8_t *data, uint16_t length);
-	
-	void CalcAnalogStick(float &pOutX, float &pOutY, int16_t x, int16_t y, bool isLeft);
-	
-	//kludge for switch having different button values
-	bool initialPass_ = true;
-	bool initialPassButton_ = true;
-	bool initialPassBT_ = true;
-	uint32_t buttonOffset_ = 0x00;
-	
+
+    void CalcAnalogStick(float &pOutX, float &pOutY, int16_t x, int16_t y, bool isLeft);
+
+    //kludge for switch having different button values
+    bool initialPass_ = true;
+    bool initialPassButton_ = true;
+    bool initialPassBT_ = true;
+    uint32_t buttonOffset_ = 0x00;
+
     uint8_t report_id_ = 0;
     bool anychange = false;
     volatile bool joystickEvent = false;
@@ -1130,7 +1130,7 @@ private:
     uint8_t sw_last_cmd_repeat_count = 0;
     enum {SW_CMD_TIMEOUT = 250000};
     elapsedMicros em_sw_;
-    
+
 
     // Used by HID code
     uint8_t collections_claimed = 0;
@@ -1546,7 +1546,7 @@ public:
 
     USBSerialBase(USBHost &host, uint32_t *big_buffer, uint16_t buffer_size,
                   uint16_t min_pipe_rxtx, uint16_t max_pipe_rxtx,
-                  uint16_t vid_to_claim, uint16_t pid_to_claim, 
+                  uint16_t vid_to_claim, uint16_t pid_to_claim,
                   sertype_t vid_pid_sertype, int vid_pid_claim_at_type
                 ) :
         txtimer(this),
@@ -1554,9 +1554,9 @@ public:
         _big_buffer_size(buffer_size),
         _min_rxtx(min_pipe_rxtx),
         _max_rxtx(max_pipe_rxtx),
-        _vid_to_claim(vid_to_claim), 
-        _pid_to_claim(pid_to_claim), 
-        _vid_pid_sertype(vid_pid_sertype), 
+        _vid_to_claim(vid_to_claim),
+        _pid_to_claim(pid_to_claim),
+        _vid_pid_sertype(vid_pid_sertype),
         _vid_pid_claim_at_type(vid_pid_claim_at_type)
 
     {
@@ -1618,7 +1618,7 @@ private:
     setup_t setup;
     uint8_t setupdata[16]; //
     uint32_t baudrate = 115200;  // lets give it a default in case begin is not called
-    uint32_t format_  = USBHOST_SERIAL_8N1; 
+    uint32_t format_  = USBHOST_SERIAL_8N1;
     uint32_t write_timeout_ = DEFAULT_WRITE_TIMEOUT;
     Pipe_t *rxpipe;
     Pipe_t *txpipe;
@@ -1665,7 +1665,7 @@ public:
     // This hopefully allows you to easily try out some vendor specific devices that underlying it uses one of our known
     // usb interface chips
     USBSerial(USBHost &host,
-              uint16_t vid_to_claim = 0, uint16_t pid_to_claim = 0, 
+              uint16_t vid_to_claim = 0, uint16_t pid_to_claim = 0,
               sertype_t vid_pid_sertype = USBSerial::UNKNOWN, int vid_pid_claim_at_type = 0) :
         // hard code the normal one to 1 and 64 bytes for most likely most are 64
         USBSerialBase(host, bigbuffer, sizeof(bigbuffer), 1, 64, vid_to_claim, pid_to_claim, vid_pid_sertype, vid_pid_claim_at_type) {};
@@ -1685,7 +1685,7 @@ public:
     //  vid_pid_sertype - Again not normally used unless pid, vid - then one of the following FTDI, PL2303, CH341, CP210X
     // void_pid_claim_at_type = like above but 0 if claim at interface (default)  or 1 claim whole device
     USBSerial_BigBuffer(USBHost &host, uint16_t min_rxtx = 65,
-              uint16_t vid_to_claim = 0, uint16_t pid_to_claim = 0, 
+              uint16_t vid_to_claim = 0, uint16_t pid_to_claim = 0,
               sertype_t vid_pid_sertype = USBSerial::UNKNOWN, int vid_pid_claim_at_type = 0) :
         USBSerialBase(host, bigbuffer, sizeof(bigbuffer), min_rxtx, 512, vid_to_claim, pid_to_claim, vid_pid_sertype, vid_pid_claim_at_type) {};
 private:
@@ -1918,13 +1918,13 @@ private:
 
 class RawHIDController : public USBHIDInput {
 public:
-	RawHIDController(USBHost &host, uint32_t usage = 0, uint8_t *rx_tx_buffers=nullptr, uint16_t rx_tx_buffer_size = 0) : 
-			fixed_usage_(usage), rx_tx_buffers_(rx_tx_buffers), rx_tx_buffer_size_(rx_tx_buffer_size) { init(); }
+    RawHIDController(USBHost &host, uint32_t usage = 0, uint8_t *rx_tx_buffers=nullptr, uint16_t rx_tx_buffer_size = 0) :
+            fixed_usage_(usage), rx_tx_buffers_(rx_tx_buffers), rx_tx_buffer_size_(rx_tx_buffer_size) { init(); }
     uint32_t usage(void) {return usage_;}
     void attachReceive(bool (*f)(uint32_t usage, const uint8_t *data, uint32_t len)) {receiveCB = f;}
-	bool sendPacket(const uint8_t *buffer, int cb = -1);
-	uint16_t rxSize() { return rx_pipe_size_;}
-	uint16_t txSize() { return tx_pipe_size_;}// size of transmit circular buffer
+    bool sendPacket(const uint8_t *buffer, int cb = -1);
+    uint16_t rxSize() { return rx_pipe_size_;}
+    uint16_t txSize() { return tx_pipe_size_;}// size of transmit circular buffer
 protected:
     virtual hidclaim_t claim_collection(USBHIDParser *driver, Device_t *dev, uint32_t topusage);
     virtual bool hid_process_in_data(const Transfer_t *transfer);
@@ -1942,13 +1942,13 @@ private:
     //volatile bool hid_input_begin_ = false;
     uint32_t fixed_usage_;
     uint32_t usage_ = 0;
-	uint16_t rx_pipe_size_;// size of receive circular buffer
-	uint16_t tx_pipe_size_;// size of transmit circular buffer
-	uint8_t  *rx_tx_buffers_;
-	uint16_t rx_tx_buffer_size_; 
+    uint16_t rx_pipe_size_;// size of receive circular buffer
+    uint16_t tx_pipe_size_;// size of transmit circular buffer
+    uint8_t  *rx_tx_buffers_;
+    uint16_t rx_tx_buffer_size_;
 
     // See if we can contribute transfers
-	Transfer_t mytransfers[4] __attribute__ ((aligned(32)));
+    Transfer_t mytransfers[4] __attribute__ ((aligned(32)));
 
 };
 
@@ -2054,7 +2054,7 @@ public:
     BluetoothConnection *next_ = nullptr;
     BTHIDInput *    device_driver_ = nullptr;
     BluetoothController *btController_ = nullptr;
-    strbuf_t *      strbuf_ = nullptr;  // possible to hold onto string if we have one 
+    strbuf_t *      strbuf_ = nullptr;  // possible to hold onto string if we have one
     uint16_t        connection_rxid_ = 0;
     uint16_t        control_dcid_ = 0x70;
     uint16_t        interrupt_dcid_ = 0x71;
@@ -2073,13 +2073,13 @@ public:
     bool            connection_started_ = false; // probably can be combined
     volatile uint8_t connection_complete_ = 0;   //
     bool            check_for_hid_descriptor_ = false;
-    bool            find_driver_type_1_called_ = false; 
+    bool            find_driver_type_1_called_ = false;
     uint8_t         seq_number_ = 0;
     bool            use_hid_protocol_ = false; //
     bool            inquire_mode_ = false; // inquire mode?  or incomming connect
     bool            sdp_connected_ = false;
-    bool            supports_SSP_ = false; 
-    bool            connection_started_by_timer_ = false; 
+    bool            supports_SSP_ = false;
+    bool            connection_started_by_timer_ = false;
     uint16_t        pending_control_tx_ = 0;
 
     enum {DUNKOWN=0xff, DNIL = 0, DU32, DS32, DU64, DS64, DPB, DLVL};
@@ -2189,7 +2189,7 @@ public:
         {return true;}
 
 
-    // These return > 0 for success, 0 for false, -1, don't want to support link keys. 
+    // These return > 0 for success, 0 for false, -1, don't want to support link keys.
     virtual int writeLinkKey(uint8_t bdaddr[6], uint8_t link_key[16]) {return 0;}
     virtual int readLinkKey(uint8_t bdaddr[6], uint8_t link_key[16]) {return 0;}
 
@@ -2228,15 +2228,15 @@ public:
 
     const uint8_t*  myBDAddr(void) {return my_bdaddr_;}
 
-    // See if we can start up pairing after sketch is running. 
+    // See if we can start up pairing after sketch is running.
     bool startDevicePairing(const char *pin, bool pair_ssp = false);
-    
+
     // Setup a bluetooth pairing callback to receive calls for information and
     // for the sketch to be able to monitor some of the pairing progress
     void setBluetoothPairingCB(BluetoothPairingCB *pairing_cb) {pairing_cb_ = pairing_cb;}
 
     // method to help control where or not all pairing keys should be stored
-    // Can be pointer to File system, in which case we will create a file "PairingKeys" 
+    // Can be pointer to File system, in which case we will create a file "PairingKeys"
     // if FS is NULL, and EEPROM start is specified will store in EEPROM starting
     // at that location.  Note if location is < -1 it will end the have the end
     // of the storage that far from the end of the EEPROM
@@ -2321,13 +2321,13 @@ private:
     void inline sendHCIRoleDiscoveryRequest();
     void inline sendHCIReadRemoteSupportedFeatures();
     void inline sendHCIReadRemoteExtendedFeatures();
-	void inline sendHCISimplePairingMode();
-	void inline sendHCIReadSimplePairingMode();
+    void inline sendHCISimplePairingMode();
+    void inline sendHCIReadSimplePairingMode();
     bool inline sendHCIReadStoredLinkKey(uint8_t link_key[16]);
     void inline sendHCIWriteStoredLinkKey(uint8_t link_key[16]);
 
-	void handle_hci_encryption_change_complete();
-	void sendHCISetConnectionEncryption();
+    void handle_hci_encryption_change_complete();
+    void sendHCISetConnectionEncryption();
     void sendInfoRequest();
 
     void handle_hci_command_complete();
@@ -2351,7 +2351,7 @@ private:
     void handle_HCI_IO_CAPABILITY_REQUEST_REPLY();
     void handle_hci_io_capability_request();
     void handle_hci_io_capability_request_reply();
-	void handle_hci_user_confirmation_request_reply();
+    void handle_hci_user_confirmation_request_reply();
 
     void setHIDProtocol(uint8_t protocol);
     static BTHIDInput *available_bthid_drivers_list;
@@ -2373,7 +2373,7 @@ private:
     uint8_t         rx2buf_[64];    // receive buffer from Bulk end point
     uint8_t         rx2buf2_[256];   // receive buffer from Bulk end point
     uint8_t         rx2_packet_data_remaining_ = 0; // how much data remaining
-    uint8_t         rx2_continue_packet_expected_ = 0; // Are we expecting a continue packet. 
+    uint8_t         rx2_continue_packet_expected_ = 0; // Are we expecting a continue packet.
     uint8_t         hciVersion;     // what version of HCI do we have?
 
     bool            do_pair_device_;    // Should we do a pair for a new device?
@@ -2382,7 +2382,7 @@ private:
     USBDriverTimer  timer_;
     uint8_t         my_bdaddr_[6];  // The bluetooth dongles Bluetooth address.
     uint8_t         features[8];    // remember our local features.
-	
+
     // key storage info
     FS              *pairing_keys_fs_ = nullptr;
     int             pairing_keys_eeprom_start_index_ = -1;
@@ -2807,9 +2807,9 @@ public:
     USBFilesystem(USBHost &host) : USBFSBase() { init(); }
     USBFilesystem(USBHost *host) : USBFSBase() { init(); }
 
-	void end();
-	void init();
-	
+    void end();
+    void init();
+
     virtual bool getVolumeLabel(char *volume_label, size_t cb) { return mscfs.getVolumeLabel(volume_label, cb); }
 
     operator bool() {
