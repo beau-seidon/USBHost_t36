@@ -34,7 +34,7 @@
 #define DBGPrintf(...)
 #endif
 
-	
+
 template<class T>
 const T& clamp(const T& x, const T& lower, const T& upper) {
     return min(upper, max(x, lower));
@@ -42,8 +42,8 @@ const T& clamp(const T& x, const T& lower, const T& upper) {
 
 bool ack_rvd = false;
 
-bool JoystickController::queue_Data_Transfer_Debug(Pipe_t *pipe, void *buffer, 
-    uint32_t len, USBDriver *driver, uint32_t line) 
+bool JoystickController::queue_Data_Transfer_Debug(Pipe_t *pipe, void *buffer,
+    uint32_t len, USBDriver *driver, uint32_t line)
 {
     if ((pipe == nullptr) || (driver == nullptr) || ((len > 0) && (buffer == nullptr))) {
         // something wrong:
@@ -82,7 +82,7 @@ JoystickController::product_vendor_mapping_t JoystickController::pid_vid_mapping
 static uint8_t switch_packet_num = 0;
 struct SWProBTSendConfigData {
         uint8_t hid_hdr;
-        uint8_t id; 
+        uint8_t id;
         uint8_t gpnum; //GlobalPacketNumber
         uint8_t rumbleDataL[4];
         uint8_t rumbleDataR[4];
@@ -92,38 +92,38 @@ struct SWProBTSendConfigData {
 
 struct SWProBTSendConfigData1 {
         uint8_t hid_hdr;
-        uint8_t id; 
+        uint8_t id;
         uint8_t gpnum; //GlobalPacketNumber
         uint8_t subCommand;
         uint8_t subCommandData[38];
 } __attribute__((packed));
 
 struct SWProIMUCalibration {
-	int16_t acc_offset[3];
-	int16_t acc_sensitivity[3] = {16384, 16384, 16384};
-	int16_t gyro_offset[3];
-	int16_t gyro_sensitivity[3] = {15335, 15335, 15335};
+    int16_t acc_offset[3];
+    int16_t acc_sensitivity[3] = {16384, 16384, 16384};
+    int16_t gyro_offset[3];
+    int16_t gyro_sensitivity[3] = {15335, 15335, 15335};
 }  __attribute__((packed));
 
 struct SWProIMUCalibration SWIMUCal;
 
 struct SWProStickCalibration {
-	int16_t rstick_center_x;
-	int16_t rstick_center_y;
-	int16_t rstick_x_min;
-	int16_t rstick_x_max;
-	int16_t rstick_y_min;
-	int16_t rstick_y_max;
-	
-	int16_t lstick_center_x;
-	int16_t lstick_center_y;
-	int16_t lstick_x_min;
-	int16_t lstick_x_max;
-	int16_t lstick_y_min;
-	int16_t lstick_y_max;
-	
-	int16_t deadzone_left;
-	int16_t deadzone_right;
+    int16_t rstick_center_x;
+    int16_t rstick_center_y;
+    int16_t rstick_x_min;
+    int16_t rstick_x_max;
+    int16_t rstick_y_min;
+    int16_t rstick_y_max;
+
+    int16_t lstick_center_x;
+    int16_t lstick_center_y;
+    int16_t lstick_x_min;
+    int16_t lstick_x_max;
+    int16_t lstick_y_min;
+    int16_t lstick_y_max;
+
+    int16_t deadzone_left;
+    int16_t deadzone_right;
 }  __attribute__((packed));
 
 struct SWProStickCalibration SWStickCal;
@@ -218,22 +218,22 @@ bool JoystickController::setRumble(uint8_t lValue, uint8_t rValue, uint8_t timeo
         return transmitPS4UserFeedbackMsg();
     case XBOXONE:
         // Lets try sending a request to the XBox 1.
-		if (btdriver_) {
-			DBGPrintf("\nXBOXONE BT Joystick update Rumble %d %d %d\n", lValue, rValue, timeout);
-			txbuf_[0] = 0xA2;                  // HID BT DATA (0xA0) | Report Type (Output 0x02)
-			txbuf_[1] = 0x03; // ID 0x03
-			txbuf_[2] = 0x0F; // Rumble mask (what motors are activated) (0000 lT rT L R)
-			txbuf_[3] = map(lValue, 0, 1023, 0, 100); // lT force
-			txbuf_[4] = map(rValue, 0, 1023, 0, 100); // rT force
-			txbuf_[5] = map(lValue, 0, 1023, 0, 100); // L force
-			txbuf_[6] = map(rValue, 0, 1023, 0, 100); // R force
-			txbuf_[7] = 0xff; // Length of pulse
-			txbuf_[8] = 0x00; // Period between pulses
-			txbuf_[9] = 0x00; // Repeat
-			btdriver_->sendL2CapCommand(txbuf_, 10, BluetoothController::INTERRUPT_SCID);
-			return true;
-		}
-		
+        if (btdriver_) {
+            DBGPrintf("\nXBOXONE BT Joystick update Rumble %d %d %d\n", lValue, rValue, timeout);
+            txbuf_[0] = 0xA2;                  // HID BT DATA (0xA0) | Report Type (Output 0x02)
+            txbuf_[1] = 0x03; // ID 0x03
+            txbuf_[2] = 0x0F; // Rumble mask (what motors are activated) (0000 lT rT L R)
+            txbuf_[3] = map(lValue, 0, 1023, 0, 100); // lT force
+            txbuf_[4] = map(rValue, 0, 1023, 0, 100); // rT force
+            txbuf_[5] = map(lValue, 0, 1023, 0, 100); // L force
+            txbuf_[6] = map(rValue, 0, 1023, 0, 100); // R force
+            txbuf_[7] = 0xff; // Length of pulse
+            txbuf_[8] = 0x00; // Period between pulses
+            txbuf_[9] = 0x00; // Repeat
+            btdriver_->sendL2CapCommand(txbuf_, 10, BluetoothController::INTERRUPT_SCID);
+            return true;
+        }
+
         txbuf_[0] = 0x9;
         txbuf_[1] = 0x0;
         txbuf_[2] = 0x0;
@@ -273,36 +273,36 @@ bool JoystickController::setRumble(uint8_t lValue, uint8_t rValue, uint8_t timeo
             struct SWProBTSendConfigData *packet =  (struct SWProBTSendConfigData *)txbuf_ ;
             memset((void*)packet, 0, sizeof(struct SWProBTSendConfigData));
             packet->hid_hdr = 0xA2; // HID BT Get_report (0xA0) | Report Type (Output)
-            packet->id = 0x10; 
-			if(switch_packet_num > 0x10) switch_packet_num = 0;
+            packet->id = 0x10;
+            if(switch_packet_num > 0x10) switch_packet_num = 0;
             packet->gpnum = switch_packet_num;
             switch_packet_num = (switch_packet_num + 1) & 0x0f;
             // 2-9 rumble data;
             Serial.printf("Set Rumble data: %d, %d\n", lValue, rValue);
             // 2-9 rumble data;
-			uint8_t rumble_on[8] = {0x28, 0x88, 0x60, 0x61, 0x28, 0x88, 0x60, 0x61};
-			uint8_t rumble_off[8] =  {0x00, 0x01, 0x40, 0x40, 0x00, 0x01, 0x40, 0x40};
-			
-			//if ((lValue == 0x00) && (rValue == 0x00)) {
-			//	for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_off[i];
-			//	for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_off[i];
-			//}
-			if ((lValue != 0x0) || (rValue != 0x0)) {
+            uint8_t rumble_on[8] = {0x28, 0x88, 0x60, 0x61, 0x28, 0x88, 0x60, 0x61};
+            uint8_t rumble_off[8] =  {0x00, 0x01, 0x40, 0x40, 0x00, 0x01, 0x40, 0x40};
+
+            //if ((lValue == 0x00) && (rValue == 0x00)) {
+            //	for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_off[i];
+            //	for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_off[i];
+            //}
+            if ((lValue != 0x0) || (rValue != 0x0)) {
                 if (lValue != 0 && rValue == 0) {
-					for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_off[i];
-					for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_on[i];
+                    for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_off[i];
+                    for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_on[i];
                 } else if (rValue != 0 && lValue == 0) {
-					for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_on[i];
-					for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_off[i];
+                    for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_on[i];
+                    for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_off[i];
                 } else if (rValue != 0 && lValue != 0) {
-					for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_on[i];
-					for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_on[i];
+                    for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_on[i];
+                    for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_on[i];
                 }
-            } 
-			
-			
+            }
+
+
             packet->subCommand = 0x0;
-            packet->subCommandData[0] = 0; 
+            packet->subCommandData[0] = 0;
             btdriver_->sendL2CapCommand((uint8_t *)packet, sizeof(struct SWProBTSendConfigData), BluetoothController::INTERRUPT_SCID /*0x40*/);
             return true;
         }
@@ -317,40 +317,40 @@ bool JoystickController::setRumble(uint8_t lValue, uint8_t rValue, uint8_t timeo
 
         // Now add in subcommand data:
         // Probably do this better soon
-		if(switch_packet_num > 0x10) switch_packet_num = 0;
+        if(switch_packet_num > 0x10) switch_packet_num = 0;
         txbuf_[1 + 0] = switch_packet_num;
         switch_packet_num = (switch_packet_num + 1) & 0x0f; //
 
-		uint8_t rumble_on[8] = {0x28, 0x88, 0x60, 0x61, 0x28, 0x88, 0x60, 0x61};
-		uint8_t rumble_off[8] =  {0x00, 0x01, 0x40, 0x40, 0x00, 0x01, 0x40, 0x40};
-		
-		//if ((lValue == 0x00) && (rValue == 0x00)) {
-		//	for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_off[i];
-		//	for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_off[i];
-		//}
-		if ((lValue != 0x0) || (rValue != 0x0)) {
-			if (lValue != 0 && rValue == 0x00) {
-				for(uint8_t i = 0; i < 4; i++) txbuf_[i + 2] = rumble_off[i];
-				for(uint8_t i = 4; i < 8; i++) txbuf_[i - 4 + 6] = rumble_on[i];
-			} else if (rValue != 0 && lValue == 0x00) {
-				for(uint8_t i = 0; i < 4; i++) txbuf_[i + 2] = rumble_on[i];
-				for(uint8_t i = 4; i < 8; i++) txbuf_[i - 4 + 6] = rumble_off[i];
-			} else if (rValue != 0 && lValue != 0) {
-				for(uint8_t i = 0; i < 4; i++) txbuf_[i + 2] = rumble_on[i];
-				for(uint8_t i = 4; i < 8; i++) txbuf_[i - 4 + 6] = rumble_on[i];
-			}
-		}
-		txbuf_[11] = 0x00;
-		txbuf_[12] = 0x00;
-		
-		if(driver_) {
-			driver_->sendPacket(txbuf_, 18);
-		} else if (txpipe_) {
-			if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 12, this, __LINE__)) {
-				println("switch transfer fail");
-				Serial.printf("Switch transfer fail\n");
-			}
-		}
+        uint8_t rumble_on[8] = {0x28, 0x88, 0x60, 0x61, 0x28, 0x88, 0x60, 0x61};
+        uint8_t rumble_off[8] =  {0x00, 0x01, 0x40, 0x40, 0x00, 0x01, 0x40, 0x40};
+
+        //if ((lValue == 0x00) && (rValue == 0x00)) {
+        //	for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_off[i];
+        //	for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_off[i];
+        //}
+        if ((lValue != 0x0) || (rValue != 0x0)) {
+            if (lValue != 0 && rValue == 0x00) {
+                for(uint8_t i = 0; i < 4; i++) txbuf_[i + 2] = rumble_off[i];
+                for(uint8_t i = 4; i < 8; i++) txbuf_[i - 4 + 6] = rumble_on[i];
+            } else if (rValue != 0 && lValue == 0x00) {
+                for(uint8_t i = 0; i < 4; i++) txbuf_[i + 2] = rumble_on[i];
+                for(uint8_t i = 4; i < 8; i++) txbuf_[i - 4 + 6] = rumble_off[i];
+            } else if (rValue != 0 && lValue != 0) {
+                for(uint8_t i = 0; i < 4; i++) txbuf_[i + 2] = rumble_on[i];
+                for(uint8_t i = 4; i < 8; i++) txbuf_[i - 4 + 6] = rumble_on[i];
+            }
+        }
+        txbuf_[11] = 0x00;
+        txbuf_[12] = 0x00;
+
+        if(driver_) {
+            driver_->sendPacket(txbuf_, 18);
+        } else if (txpipe_) {
+            if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 12, this, __LINE__)) {
+                println("switch transfer fail");
+                Serial.printf("Switch transfer fail\n");
+            }
+        }
 
         return true;
     }
@@ -401,7 +401,7 @@ bool JoystickController::setLEDs(uint8_t lr, uint8_t lg, uint8_t lb)
                 struct SWProBTSendConfigData *packet =  (struct SWProBTSendConfigData *)txbuf_ ;
                 memset((void*)packet, 0, sizeof(struct SWProBTSendConfigData));
                 packet->hid_hdr = 0xA2; // HID BT Get_report (0xA0) | Report Type (Output)
-                packet->id = 1; 
+                packet->id = 1;
                 packet->gpnum = switch_packet_num;
                 switch_packet_num = (switch_packet_num + 1) & 0x0f;
                 // 2-9 rumble data;
@@ -414,7 +414,7 @@ bool JoystickController::setLEDs(uint8_t lr, uint8_t lg, uint8_t lb)
                 packet->rumbleDataR[2] = 0x40;
                 packet->rumbleDataR[3] = 0x00; */
 
-                packet->subCommand = 0x30; // Report ID 
+                packet->subCommand = 0x30; // Report ID
                 packet->subCommandData[0] = lr; // try full 0x30?; // Report ID
                 btdriver_->sendL2CapCommand((uint8_t *)packet, sizeof(struct SWProBTSendConfigData), BluetoothController::INTERRUPT_SCID /*0x40*/);
                 return true;
@@ -440,15 +440,15 @@ bool JoystickController::setLEDs(uint8_t lr, uint8_t lg, uint8_t lb)
             txbuf_[1 + 10] = lr;
             println("Switch set leds: driver? ", (uint32_t)driver_, HEX);
             print_hexbytes((uint8_t*)txbuf_, 20);
-			
-			if(driver_) {
-				driver_->sendPacket(txbuf_, 20);
-			} else if (txpipe_) {
-				if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 20, this, __LINE__)) {
-					println("switch transfer fail");
-					Serial.printf("Switch transfer fail\n");
-				}
-			}
+
+            if(driver_) {
+                driver_->sendPacket(txbuf_, 20);
+            } else if (txpipe_) {
+                if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 20, this, __LINE__)) {
+                    println("switch transfer fail");
+                    Serial.printf("Switch transfer fail\n");
+                }
+            }
 
         case XBOXONE:
         default:
@@ -583,7 +583,7 @@ hidclaim_t JoystickController::claim_collection(USBHIDParser *driver, Device_t *
 
     // Also don't allow us to claim if it is used as a standard usb object (XBox...)
     if (device != nullptr) return CLAIM_NO;
-	
+
     mydevice = dev;
     collections_claimed++;
     anychange = true; // always report values on first read
@@ -610,7 +610,7 @@ hidclaim_t JoystickController::claim_collection(USBHIDParser *driver, Device_t *
         break;
      case SWITCH:
         // bugbug set the hand shake...
-        {            
+        {
             DBGPrintf("Send Handshake\n");
             sw_sendCmdUSB(0x02, SW_CMD_TIMEOUT);
             initialPass_ = true;
@@ -624,8 +624,8 @@ hidclaim_t JoystickController::claim_collection(USBHIDParser *driver, Device_t *
         additional_axis_usage_count_ = 5;
         axis_change_notify_mask_ = 0x3ff;   // Start off assume only the 10 bits...
     }
-	
-	
+
+
     //DBGPrintf("Claim Additional axis: %x %x %d\n", additional_axis_usage_page_, additional_axis_usage_start_, additional_axis_usage_count_);
     USBHDBGSerial.printf("\tJoystickController claim collection\n");
     return CLAIM_REPORT;
@@ -644,7 +644,7 @@ void JoystickController::disconnect_collection(Device_t *dev)
 void JoystickController::hid_input_begin(uint32_t topusage, uint32_t type, int lgmin, int lgmax)
 {
     // TODO: set up translation from logical min/max to consistent 16 bit scale
-	
+
 }
 
 void JoystickController::hid_input_data(uint32_t usage, int32_t value)
@@ -739,7 +739,7 @@ bool JoystickController::sw_handle_usb_init_of_joystick(uint8_t *buffer, uint16_
 
             if (!initialPass_) return true; // don't need to process
 
-            if (sw_last_cmd_sent_ == ack_rpt) { 
+            if (sw_last_cmd_sent_ == ack_rpt) {
                 sw_last_cmd_repeat_count = 0;
                 connectedComplete_pending_++;
             } else {
@@ -754,10 +754,10 @@ bool JoystickController::sw_handle_usb_init_of_joystick(uint8_t *buffer, uint16_
                 }
             }
         } else {
-            // 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 
+            // 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
             //21 0a 71 00 80 00 01 e8 7f 01 e8 7f 0c 80 40 00 00 00 00 00 00 ...
             uint8_t ack_21_subrpt = buffer[14];
-			sw_parseAckMsg(buffer);
+            sw_parseAckMsg(buffer);
             DBGPrintf("\t(%u)CMD Submd ack cmd: %x \n", (uint32_t)em_sw_, ack_21_subrpt);
             switch (ack_21_subrpt) {
                 case 0x40: DBGPrintf("IMU Enabled......\n"); break;
@@ -766,7 +766,7 @@ bool JoystickController::sw_handle_usb_init_of_joystick(uint8_t *buffer, uint16_
                 case 0x30: DBGPrintf("Std Rpt Enabled......\n"); break;
                 default: DBGPrintf("Other"); break;
             }
-            
+
             if (!initialPass_) return true; // don't need to process
             sw_last_cmd_repeat_count = 0;
             connectedComplete_pending_++;
@@ -777,7 +777,7 @@ bool JoystickController::sw_handle_usb_init_of_joystick(uint8_t *buffer, uint16_
         if (!initialPass_) return true; // don't need to process
         DBGPrintf("\t(%u)Timer event - advance\n", (uint32_t)em_sw_);
         sw_last_cmd_repeat_count = 0;
-        connectedComplete_pending_++; 
+        connectedComplete_pending_++;
     }
 
     // Now lets Send out the next state
@@ -803,23 +803,23 @@ bool JoystickController::sw_handle_usb_init_of_joystick(uint8_t *buffer, uint16_
             packet_[4] = (0x6037 - 0x6020 + 1);
             sw_sendSubCmdUSB(0x10, packet_, 5, SW_CMD_TIMEOUT);   // doesnt work wired
             break;
-		case 3:
-			DBGPrintf("\nTry to Get IMU Horizontal Offset Data\n");
-			packet_[0] = 0x80;
-			packet_[1] = 0x60;
-			packet_[2] = 0x00;
-			packet_[3] = 0x00;
-			packet_[4] = (0x6085 - 0x6080 + 1);
-			sw_sendSubCmdUSB(0x10, packet_, 5, SW_CMD_TIMEOUT);   
-			break;
-		case 4:
-			DBGPrintf("\n Read: Factory Analog stick calibration and Controller Colours\n");
-			packet_[0] = 0x3D;
-			packet_[1] = 0x60;
-			packet_[2] = 0x00;
-			packet_[3] = 0x00;
-			packet_[4] = (0x6055 - 0x603D + 1); 
-			sw_sendSubCmdUSB(0x10, packet_, 5, SW_CMD_TIMEOUT);	
+        case 3:
+            DBGPrintf("\nTry to Get IMU Horizontal Offset Data\n");
+            packet_[0] = 0x80;
+            packet_[1] = 0x60;
+            packet_[2] = 0x00;
+            packet_[3] = 0x00;
+            packet_[4] = (0x6085 - 0x6080 + 1);
+            sw_sendSubCmdUSB(0x10, packet_, 5, SW_CMD_TIMEOUT);
+            break;
+        case 4:
+            DBGPrintf("\n Read: Factory Analog stick calibration and Controller Colours\n");
+            packet_[0] = 0x3D;
+            packet_[1] = 0x60;
+            packet_[2] = 0x00;
+            packet_[3] = 0x00;
+            packet_[4] = (0x6055 - 0x603D + 1);
+            sw_sendSubCmdUSB(0x10, packet_, 5, SW_CMD_TIMEOUT);
             break;
         case 5:
             connectedComplete_pending_++;
@@ -865,16 +865,16 @@ bool JoystickController::hid_process_in_data(const Transfer_t *transfer)
     for (uint8_t i = 0; i < cnt; i++) DBGPrintf(" %02x", buffer[i]);
     DBGPrintf("\n");
 
-	if (joystickType_ == SWITCH) {
+    if (joystickType_ == SWITCH) {
         if (sw_handle_usb_init_of_joystick(buffer, cnt, false))
             return true;
-		// the main HID parse code should handle it. 
-		sw_process_HID_data(buffer, cnt);
-        return true; // don't let main hid code process this.		
-	}
+        // the main HID parse code should handle it.
+        sw_process_HID_data(buffer, cnt);
+        return true; // don't let main hid code process this.
+    }
 
-	
-	return false;
+
+    return false;
 }
 
 void JoystickController::hid_timer_event(USBDriverTimer *whichTimer)
@@ -1034,7 +1034,7 @@ bool JoystickController::claim(Device_t *dev, int type, const uint8_t *descripto
     memset(axis, 0, sizeof(axis));  // clear out any data.
     joystickType_ = jtype;      // remember we are an XBox One.
     DBGPrintf("   JoystickController::claim joystickType_ %d\n", joystickType_);
-	return true;
+    return true;
 }
 
 void JoystickController::control(const Transfer_t *transfer)
@@ -1206,46 +1206,46 @@ void JoystickController::rx_data(const Transfer_t *transfer)
             if (anychange) joystickEvent = true;
         }
     } else if (joystickType_ == SWITCH) {
-    	uint8_t packet[8];
-		if(initialPass_ == true) {
-			switch(connectedComplete_pending_) {
-				case 0:
-					//setup handshake
-					DBGPrintf("Send Handshake\n");
+        uint8_t packet[8];
+        if(initialPass_ == true) {
+            switch(connectedComplete_pending_) {
+                case 0:
+                    //setup handshake
+                    DBGPrintf("Send Handshake\n");
                     sw_sendCmdUSB(0x02, SW_CMD_TIMEOUT);
-					connectedComplete_pending_ = 1;
-					break;
-				case 1:
-					DBGPrintf("Send Hid only\n");
+                    connectedComplete_pending_ = 1;
+                    break;
+                case 1:
+                    DBGPrintf("Send Hid only\n");
                     sw_sendCmdUSB(0x04, SW_CMD_TIMEOUT);
-					connectedComplete_pending_ = 2;
-					break;
-				case 2:
-					//Send report type
-					DBGPrintf("Enable IMU\n");
-					packet[0] = 0x01;
-					sw_sendSubCmdUSB(0x40, packet, 1);
-					connectedComplete_pending_ = 3;
-					break;
-				case 3:
-					DBGPrintf("Enable Rumble\n");
-					packet[0] = 0x01;
-					sw_sendSubCmdUSB(0x48, packet, 1);
-					connectedComplete_pending_ = 4;
-					break;
-				case 4:
-					DBGPrintf("Enable Std Rpt\n");
-					packet[0] = 0x30;
-					sw_sendSubCmdUSB(0x3f, packet, 1);
-					connectedComplete_pending_ = 5;
-				case 5:
-					connectedComplete_pending_ = 0;
-					initialPass_ = false;
-					break;
-			}
-		}
+                    connectedComplete_pending_ = 2;
+                    break;
+                case 2:
+                    //Send report type
+                    DBGPrintf("Enable IMU\n");
+                    packet[0] = 0x01;
+                    sw_sendSubCmdUSB(0x40, packet, 1);
+                    connectedComplete_pending_ = 3;
+                    break;
+                case 3:
+                    DBGPrintf("Enable Rumble\n");
+                    packet[0] = 0x01;
+                    sw_sendSubCmdUSB(0x48, packet, 1);
+                    connectedComplete_pending_ = 4;
+                    break;
+                case 4:
+                    DBGPrintf("Enable Std Rpt\n");
+                    packet[0] = 0x30;
+                    sw_sendSubCmdUSB(0x3f, packet, 1);
+                    connectedComplete_pending_ = 5;
+                case 5:
+                    connectedComplete_pending_ = 0;
+                    initialPass_ = false;
+                    break;
+            }
+        }
         switchdataUSB_t  *switchd = (switchdataUSB_t *)transfer->buffer;
-		//uint32_t cur_buttons = switchd->buttons_l | (switchd->buttons_m << 8) | (switchd->buttons_h << 16);
+        //uint32_t cur_buttons = switchd->buttons_l | (switchd->buttons_m << 8) | (switchd->buttons_h << 16);
         uint16_t cur_buttons = (switchd->buttons_h << 8) | switchd->buttons_l;
         if (buttons != cur_buttons) {
             buttons = cur_buttons;
@@ -1261,19 +1261,19 @@ void JoystickController::rx_data(const Transfer_t *transfer)
                 anychange = true;
             }
         }
-		
-		//apply stick calibration
-		float xout, yout;
-		CalcAnalogStick(xout, yout, axis[0], axis[1], true);
-		//Serial.printf("Correctd Left Stick: %f, %f\n", xout , yout);
-		axis[0] = int(round(xout));
-		axis[1] = int(round(yout));
-		
-		CalcAnalogStick(xout, yout, axis[2], axis[3], true);
-		axis[2] = int(round(xout));
-		axis[3] = int(round(yout));
-		
-		
+
+        //apply stick calibration
+        float xout, yout;
+        CalcAnalogStick(xout, yout, axis[0], axis[1], true);
+        //Serial.printf("Correctd Left Stick: %f, %f\n", xout , yout);
+        axis[0] = int(round(xout));
+        axis[1] = int(round(yout));
+
+        CalcAnalogStick(xout, yout, axis[2], axis[3], true);
+        axis[2] = int(round(xout));
+        axis[3] = int(round(yout));
+
+
         // the two triggers show up as 4 and 5
         if (axis[6] != switchd->lt) {
             axis[6] = switchd->lt;
@@ -1461,7 +1461,7 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
             static const uint8_t xbox_bt_axis_order_mapping[] = { 0, 1, 2, 3, 4, 5};
             axis_mask_ = 0x3f;
             axis_changed_mask_ = 0; // assume none for now
-			
+
             xbox1data20bt_t *xb1d = (xbox1data20bt_t *)data;
             //if ((xb1d->type == 0x20) && (length >= sizeof (xbox1data20bt_t))) {
                 // We have a data transfer.  Lets see what is new...
@@ -1475,8 +1475,8 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
                     // The first two values were unsigned.
                     int axis_value = (i < 4) ? (int)(uint16_t)xb1d->axis[i] : xb1d->axis[i];
 
-					//DBGPrintf(" axis value [ %d ] = %d \n", i, axis_value);
-					
+                    //DBGPrintf(" axis value [ %d ] = %d \n", i, axis_value);
+
                     if (axis_value != axis[xbox_bt_axis_order_mapping[i]]) {
                         axis[xbox_bt_axis_order_mapping[i]] = axis_value;
                         axis_changed_mask_ |= (1 << xbox_bt_axis_order_mapping[i]);
@@ -1607,7 +1607,7 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
 
         return sw_process_HID_data(data, length);
     }
-    
+
     return false;
 }
 
@@ -1628,23 +1628,23 @@ bool JoystickController::sw_handle_bt_init_of_joystick(const uint8_t *data, uint
         DBGPrintf("  Joystick Data: ");
         for (uint16_t i = 0; i < length; i++) DBGPrintf("%02x ", data[i]);
         DBGPrintf("\r\n");
-        
+
         btconnect->stopTimer();
 
         sw_parseAckMsg(data);
 
-		DBGPrintf("==========> Connection Pending: %d\n",connectedComplete_pending_);
+        DBGPrintf("==========> Connection Pending: %d\n",connectedComplete_pending_);
 
 
         if (!initialPassBT_) return true; // don't need to process
         // Shold maybe double check the right one...
-        connectedComplete_pending_++; 
+        connectedComplete_pending_++;
     } else if (timer_event) {
         if (!initialPassBT_) return true; // don't need to process
         DBGPrintf("\t(%u)Timer event - advance\n", (uint32_t)em_sw_);
-        connectedComplete_pending_++; 
+        connectedComplete_pending_++;
     }
-		DBGPrintf("==========> Connection Pending: %d\n",connectedComplete_pending_);
+        DBGPrintf("==========> Connection Pending: %d\n",connectedComplete_pending_);
 
     // only called by BT;
     uint8_t packet_[8];
@@ -1660,8 +1660,8 @@ bool JoystickController::sw_handle_bt_init_of_joystick(const uint8_t *data, uint
         packet_[1] = 0x60;
         packet_[2] = 0x00;
         packet_[3] = 0x00;
-        packet_[4] = (0x6097 - 0x6086 + 1); 
-        sw_sendCmd(0x10, packet_, 5, SW_CMD_TIMEOUT);   
+        packet_[4] = (0x6097 - 0x6086 + 1);
+        sw_sendCmd(0x10, packet_, 5, SW_CMD_TIMEOUT);
         break;
     case 3:
         DBGPrintf("\n Read Right stick dead zone\n");
@@ -1669,8 +1669,8 @@ bool JoystickController::sw_handle_bt_init_of_joystick(const uint8_t *data, uint
         packet_[1] = 0x60;
         packet_[2] = 0x00;
         packet_[3] = 0x00;
-        packet_[4] = (0x60A9 - 0x6098 + 1);  
-        sw_sendCmd(0x10, packet_, 5, SW_CMD_TIMEOUT);   
+        packet_[4] = (0x60A9 - 0x6098 + 1);
+        sw_sendCmd(0x10, packet_, 5, SW_CMD_TIMEOUT);
         break;
     case 4:
         DBGPrintf("\n Read: Factory Analog stick calibration\n");
@@ -1678,8 +1678,8 @@ bool JoystickController::sw_handle_bt_init_of_joystick(const uint8_t *data, uint
         packet_[1] = 0x60;
         packet_[2] = 0x00;
         packet_[3] = 0x00;
-        packet_[4] = (0x604E - 0x603D + 1); 
-        sw_sendCmd(0x10, packet_, 5, SW_CMD_TIMEOUT);   
+        packet_[4] = (0x604E - 0x603D + 1);
+        sw_sendCmd(0x10, packet_, 5, SW_CMD_TIMEOUT);
         break;
     case 5:
         DBGPrintf("\nTry to Get IMU Calibration Data\n");
@@ -1688,17 +1688,17 @@ bool JoystickController::sw_handle_bt_init_of_joystick(const uint8_t *data, uint
         packet_[2] = 0x00;
         packet_[3] = 0x00;
         packet_[4] = (0x6037 - 0x6020 + 1);
-        sw_sendCmd(0x10, packet_, 5, SW_CMD_TIMEOUT);   
+        sw_sendCmd(0x10, packet_, 5, SW_CMD_TIMEOUT);
         break;
-	case 6:
+    case 6:
         DBGPrintf("\nTry to Get IMU Horizontal Offset Data\n");
         packet_[0] = 0x80;
         packet_[1] = 0x60;
         packet_[2] = 0x00;
         packet_[3] = 0x00;
         packet_[4] = (0x6097 - 0x6080 + 1);
-        sw_sendCmd(0x10, packet_, 5, SW_CMD_TIMEOUT);   
-		break;
+        sw_sendCmd(0x10, packet_, 5, SW_CMD_TIMEOUT);
+        break;
     case 7:
         DBGPrintf("\nTry to Enable IMU\n");
         packet_[0] = 0x01;
@@ -1721,7 +1721,7 @@ bool JoystickController::sw_handle_bt_init_of_joystick(const uint8_t *data, uint
     case 11:
         DBGPrintf("\nTry to set Rumble\n");
         setRumble(0xff, 0xff, 0xff);
-		initialPassBT_ = false;
+        initialPassBT_ = false;
         connectedComplete_pending_ = 0xff;
         break;
     }
@@ -1741,7 +1741,7 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
 {
     if (data[0] == 0x3f) {
         // Assume switch:
-        //<<(02 15 21):48 20 11 00 0D 00 71 00 A1 
+        //<<(02 15 21):48 20 11 00 0D 00 71 00 A1
         // 16 bits buttons
         // 4 bits hat
         // 4 bits <constant>
@@ -1766,7 +1766,7 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
         static const uint8_t switch_bt_axis_order_mapping[] = { 0, 1, 2, 3};
         axis_mask_ = 0x1ff;
         axis_changed_mask_ = 0; // assume none for now
-        
+
         switchbt_t *sw1d = (switchbt_t *)data;
         // We have a data transfer.  Lets see what is new...
         if (sw1d->buttons != buttons) {
@@ -1779,9 +1779,9 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
         if (sw1d->hat != axis[9]) {
             axis[9] = sw1d->hat;
             axis_changed_mask_ |= (1 << 9);
-            anychange = true;            
+            anychange = true;
         }
-        
+
         //just a hack for a single joycon.
         if(buttons == 0x8000) { //ZL
             axis[6] = 1;
@@ -1793,14 +1793,14 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
         } else {
             axis[7] = 0;
         }
-        
-        
+
+
         for (uint8_t i = 0; i < sizeof (switch_bt_axis_order_mapping); i++) {
             // The first two values were unsigned.
             int axis_value = (uint16_t)sw1d->axis[i];
 
             //DBGPrintf(" axis value [ %d ] = %d \n", i, axis_value);
-            
+
             if (axis_value != axis[switch_bt_axis_order_mapping[i]]) {
                 axis[switch_bt_axis_order_mapping[i]] = axis_value;
                 axis_changed_mask_ |= (1 << switch_bt_axis_order_mapping[i]);
@@ -1813,10 +1813,10 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
     } else if (data[0] == 0x30) {
         // Assume switch full report
         //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48
-        // 30 E0 80 00 00 00 D9 37 79 19 98 70 00 0D 0B F1 02 F0 0A 41 FE 25 FC 89 00 F8 0A F0 02 F2 0A 41 FE D9 FB 99 00 D4 0A F6 02 FC 0A 3C FE 69 FB B8 00 
-        //<<(02 15 21):48 20 11 00 0D 00 71 00 A1 
+        // 30 E0 80 00 00 00 D9 37 79 19 98 70 00 0D 0B F1 02 F0 0A 41 FE 25 FC 89 00 F8 0A F0 02 F2 0A 41 FE D9 FB 99 00 D4 0A F6 02 FC 0A 3C FE 69 FB B8 00
+        //<<(02 15 21):48 20 11 00 0D 00 71 00 A1
         //static const uint8_t switch_bt_axis_order_mapping[] = { 0, 1, 2, 3};
-        axis_mask_ = 0x7fff;  // have all of the fields. 
+        axis_mask_ = 0x7fff;  // have all of the fields.
         axis_changed_mask_ = 0; // assume none for now
         // We have a data transfer.  Lets see what is new...
         uint32_t cur_buttons = data[3] | (data[4] << 8) | (data[5] << 16);
@@ -1830,7 +1830,7 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
             }
             initialPassButton_ = false;
         }
-        
+
         cur_buttons = cur_buttons - buttonOffset_;
         //Serial.printf("Buttons (3,4,5): %x, %x, %x, %x, %x, %x\n", buttonOffset_, cur_buttons, buttons, data[3], data[4], data[5]);
 
@@ -1845,7 +1845,7 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
         if (sw1d->hat != axis[9]) {
             axis[9] = sw1d->hat;
             axis_changed_mask_ |= (1 << 9);
-            anychange = true;            
+            anychange = true;
         }
         */
 
@@ -1885,14 +1885,14 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
             new_axis[6] = 0xff;
             new_axis[7] = 0xff;
         }
-        
+
         sw_update_axis(8, (int16_t)(data[13]  | (data[14] << 8))); //ax
         sw_update_axis(9, (int16_t)(data[15]  | (data[16] << 8))); //ay
         sw_update_axis(10,  (int16_t)(data[17] | (data[18] << 8))); //az
         sw_update_axis(11,  (int16_t)(data[19] | (data[20] << 8)));  //gx
         sw_update_axis(12,  (int16_t)(data[21] | (data[22] << 8))); //gy
-        sw_update_axis(13,  (int16_t)(data[23] | (data[24] << 8))); //gz  
-        
+        sw_update_axis(13,  (int16_t)(data[23] | (data[24] << 8))); //gz
+
         sw_update_axis(14,  data[2] >> 4);  //Battery level, 8=full, 6=medium, 4=low, 2=critical, 0=empty
 
         //map axes
@@ -1904,21 +1904,21 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
                 anychange = true;
             }
         }
-        
-		//apply stick calibration
-		float xout, yout;
-		CalcAnalogStick(xout, yout, new_axis[0], new_axis[1], true);
-		//Serial.printf("Correctd Left Stick: %f, %f\n", xout , yout);
-		axis[0] = int(round(xout));
-		axis[1] = int(round(yout));
-		
-		CalcAnalogStick(xout, yout, new_axis[2], new_axis[3], true);
-		axis[2] = int(round(xout));
-		axis[3] = int(round(yout));
-		
+
+        //apply stick calibration
+        float xout, yout;
+        CalcAnalogStick(xout, yout, new_axis[0], new_axis[1], true);
+        //Serial.printf("Correctd Left Stick: %f, %f\n", xout , yout);
+        axis[0] = int(round(xout));
+        axis[1] = int(round(yout));
+
+        CalcAnalogStick(xout, yout, new_axis[2], new_axis[3], true);
+        axis[2] = int(round(xout));
+        axis[3] = int(round(yout));
+
         joystickEvent = true;
         initialPass_ = false;
-        
+
     }
     return false;
 }
@@ -1928,7 +1928,7 @@ hidclaim_t JoystickController::bt_claim_collection(BluetoothConnection *btconnec
     USBHDBGSerial.printf("JoystickController::bt_claim_collection(%p) Connection:%p class:%x Top:%x\n", this, btconnection, bluetooth_class, topusage);
 
 
-    if (mydevice != NULL) return CLAIM_NO;  // claimed by some other... 
+    if (mydevice != NULL) return CLAIM_NO;  // claimed by some other...
     if (btconnect && (btconnect != btconnection)) return CLAIM_NO;
     // We will claim if BOOT Keyboard.
 
@@ -1937,7 +1937,7 @@ hidclaim_t JoystickController::bt_claim_collection(BluetoothConnection *btconnec
 
     USBHDBGSerial.printf("\tJoystickController claim collection\n");
     btconnect = btconnection;
-    btdevice = (Device_t*)btconnect->btController_; // remember this way 
+    btdevice = (Device_t*)btconnect->btController_; // remember this way
 
     // experiment?  See if we can now tell system to maybe set which report we want
     connectionComplete();
@@ -1946,7 +1946,7 @@ hidclaim_t JoystickController::bt_claim_collection(BluetoothConnection *btconnec
 
 void JoystickController::bt_hid_input_begin(uint32_t topusage, uint32_t type, int lgmin, int lgmax)
 {
-    hid_input_begin(topusage, type, lgmin, lgmax);  
+    hid_input_begin(topusage, type, lgmin, lgmax);
 }
 
 void JoystickController::bt_hid_input_data(uint32_t usage, int32_t value)
@@ -2052,15 +2052,15 @@ void JoystickController::connectionComplete()
     {
         // See if we can set a specific report
 #if 1
-		uint8_t packet_[8];
+        uint8_t packet_[8];
         DBGPrintf("Request Device Info......\n");
-		packet_[0] = 0x00;
-		sw_sendCmd(0x02, packet_, 1, SW_CMD_TIMEOUT);
+        packet_[0] = 0x00;
+        sw_sendCmd(0x02, packet_, 1, SW_CMD_TIMEOUT);
         connectedComplete_pending_ = 0;
 
-		DBGPrintf("Config Complete!\n");
-		
-		
+        DBGPrintf("Config Complete!\n");
+
+
 #endif
     }
 
@@ -2141,27 +2141,27 @@ bool JoystickController::PS4Pair(uint8_t* bdaddr) {
 
 //Nintendo Switch functions
 void JoystickController::sw_sendCmd(uint8_t cmd, uint8_t *data, uint16_t size, uint32_t timeout) {
-	struct SWProBTSendConfigData *packet =  (struct SWProBTSendConfigData *)txbuf_ ;
-	memset((void*)packet, 0, sizeof(struct SWProBTSendConfigData));
-	packet->hid_hdr = 0xA2; // HID BT Get_report (0xA0) | Report Type (Output)
-	packet->id = 1; 
-	packet->gpnum = switch_packet_num;
-	switch_packet_num = (switch_packet_num + 1) & 0x0f;
-	// 2-9 rumble data;
-	packet->rumbleDataL[0] = 0x00;
-	packet->rumbleDataL[1] = 0x01;
-	packet->rumbleDataL[2] = 0x40;
-	packet->rumbleDataL[3] = 0x40;
-	packet->rumbleDataR[0] = 0x00;
-	packet->rumbleDataR[1] = 0x01;
-	packet->rumbleDataR[2] = 0x40;
-	packet->rumbleDataR[3] = 0x40;
+    struct SWProBTSendConfigData *packet =  (struct SWProBTSendConfigData *)txbuf_ ;
+    memset((void*)packet, 0, sizeof(struct SWProBTSendConfigData));
+    packet->hid_hdr = 0xA2; // HID BT Get_report (0xA0) | Report Type (Output)
+    packet->id = 1;
+    packet->gpnum = switch_packet_num;
+    switch_packet_num = (switch_packet_num + 1) & 0x0f;
+    // 2-9 rumble data;
+    packet->rumbleDataL[0] = 0x00;
+    packet->rumbleDataL[1] = 0x01;
+    packet->rumbleDataL[2] = 0x40;
+    packet->rumbleDataL[3] = 0x40;
+    packet->rumbleDataR[0] = 0x00;
+    packet->rumbleDataR[1] = 0x01;
+    packet->rumbleDataR[2] = 0x40;
+    packet->rumbleDataR[3] = 0x40;
 
-	packet->subCommand = cmd; // Report ID
-	for(uint16_t i = 0; i < size; i++) {
-		packet->subCommandData[i] = data[i];
-	}
-	if (btdriver_) {
+    packet->subCommand = cmd; // Report ID
+    for(uint16_t i = 0; i < size; i++) {
+        packet->subCommandData[i] = data[i];
+    }
+    if (btdriver_) {
         if (timeout != 0) {
             btconnect->startTimer(timeout);
         }
@@ -2173,21 +2173,21 @@ void JoystickController::sw_sendCmd(uint8_t cmd, uint8_t *data, uint16_t size, u
 
 void JoystickController::sw_sendCmdUSB(uint8_t cmd, uint32_t timeout) {
     DBGPrintf("sw_sendCmdUSB: cmd:%x, timeout:%x\n",  cmd, timeout);
-	//sub-command
+    //sub-command
     txbuf_[0] = 0x80;
-	txbuf_[1] = cmd;
+    txbuf_[1] = cmd;
     sw_last_cmd_sent_ = cmd; // remember which command we sent
-	if(driver_) {
+    if(driver_) {
         if (timeout != 0) {
             driver_->startTimer(timeout);
         }
-		driver_->sendPacket(txbuf_, 2);
+        driver_->sendPacket(txbuf_, 2);
         em_sw_ = 0;
-	} else {
-		if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 18, this, __LINE__)) {
-			println("switch transfer fail");
-		}
-	}
+    } else {
+        if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 18, this, __LINE__)) {
+            println("switch transfer fail");
+        }
+    }
 }
 
 void JoystickController::sw_sendSubCmdUSB(uint8_t sub_cmd, uint8_t *data, uint8_t size, uint32_t timeout) {
@@ -2196,7 +2196,7 @@ void JoystickController::sw_sendSubCmdUSB(uint8_t sub_cmd, uint8_t *data, uint8_
         DBGPrintf("\n");
         memset(txbuf_, 0, 32);  // make sure it is cleared out
 
-		txbuf_[0] = 0x01;
+        txbuf_[0] = 0x01;
         // Now add in subcommand data:
         // Probably do this better soon
         txbuf_[ 1] = switch_packet_num = (switch_packet_num + 1) & 0x0f; //
@@ -2209,126 +2209,126 @@ void JoystickController::sw_sendSubCmdUSB(uint8_t sub_cmd, uint8_t *data, uint8_
         txbuf_[ 7] = 0x01;
         txbuf_[ 8] = 0x40;
         txbuf_[ 9] = 0x40;
-		
-		txbuf_[ 10] = sub_cmd;
-		
-		//sub-command
-		for(uint16_t i = 0; i < size; i++) {
-			txbuf_[i + 11] = data[i];
-		}
 
-		println("USB send sub cmd: driver? ", (uint32_t)driver_, HEX);
-		print_hexbytes((uint8_t*)txbuf_, 32);
-		
-		if(driver_) {
-			driver_->sendPacket(txbuf_, 32);
+        txbuf_[ 10] = sub_cmd;
+
+        //sub-command
+        for(uint16_t i = 0; i < size; i++) {
+            txbuf_[i + 11] = data[i];
+        }
+
+        println("USB send sub cmd: driver? ", (uint32_t)driver_, HEX);
+        print_hexbytes((uint8_t*)txbuf_, 32);
+
+        if(driver_) {
+            driver_->sendPacket(txbuf_, 32);
             if (timeout != 0) {
                 driver_->startTimer(timeout);
             }
-		} else if (txpipe_) {
-			if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 32, this, __LINE__)) {
-				println("switch transfer fail");
-			}
-		}
+        } else if (txpipe_) {
+            if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 32, this, __LINE__)) {
+                println("switch transfer fail");
+            }
+        }
         em_sw_ = 0;
-		if (!timeout) delay(100);
+        if (!timeout) delay(100);
 }
 
-void JoystickController::sw_parseAckMsg(const uint8_t *buf_) 
+void JoystickController::sw_parseAckMsg(const uint8_t *buf_)
 {
-	int16_t data[6];
-	uint8_t offset = 20;
-	uint8_t icount = 0;
-	//uint8_t packet_[8];
-	
-	if((buf_[14] == 0x10 && buf_[15] == 0x20 && buf_[16] == 0x60)) {
-		//parse IMU calibration
-		DBGPrintf("===>  IMU Calibration \n");	
-		for(uint8_t i = 0; i < 3; i++) {
-			SWIMUCal.acc_offset[i] = (int16_t)(buf_[icount+offset] | (buf_[icount+offset+1] << 8));
-			SWIMUCal.acc_sensitivity[i] = (int16_t)(buf_[icount+offset+6] | (buf_[icount+offset+1+6] << 8));
-			SWIMUCal.gyro_offset[i] = (int16_t)(buf_[icount+offset+12] | (buf_[icount+offset+1+12] << 8));
-			SWIMUCal.gyro_sensitivity[i] = (int16_t)(buf_[icount+offset+18] | (buf_[icount+offset+1+18] << 8));
-			icount = i * 2;
-		}
-		for(uint8_t i = 0; i < 3; i++) {
-			DBGPrintf("\t %d, %d, %d, %d\n", SWIMUCal.acc_offset[i], SWIMUCal.acc_sensitivity[i],
-				SWIMUCal.gyro_offset[i], SWIMUCal.gyro_sensitivity[i]);
-		} 
-	} else if((buf_[14] == 0x10 && buf_[15] == 0x80 && buf_[16] == 0x60)) {
-		//parse IMU calibration
-		DBGPrintf("===>  IMU Calibration Offsets \n");	
-		for(uint8_t i = 0; i < 3; i++) {
-			SWIMUCal.acc_offset[i] = (int16_t)(buf_[i+offset] | (buf_[i+offset+1] << 8));
-		}
-		for(uint8_t i = 0; i < 3; i++) {
-			DBGPrintf("\t %d\n", SWIMUCal.acc_offset[i]);
-		}
-	} else if((buf_[14] == 0x10 && buf_[15] == 0x3D && buf_[16] == 0x60)){		//left stick
-		offset = 20;
-		data[0] = ((buf_[1+offset] << 8) & 0xF00) | buf_[0+offset];
-		data[1] = (buf_[2+offset] << 4) | (buf_[1+offset] >> 4);
-		data[2] = ((buf_[4+offset] << 8) & 0xF00) | buf_[3+offset];
-		data[3] = (buf_[5+offset] << 4) | (buf_[4+offset] >> 4);
-		data[4] = ((buf_[7+offset] << 8) & 0xF00) | buf_[6+offset];
-		data[5] = (buf_[8+offset] << 4) | (buf_[7+offset] >> 4);
-		
-		SWStickCal.lstick_center_x = data[2];
-		SWStickCal.lstick_center_y = data[3];
-		SWStickCal.lstick_x_min = SWStickCal.lstick_center_x - data[0];
-		SWStickCal.lstick_x_max = SWStickCal.lstick_center_x + data[4];
-		SWStickCal.lstick_y_min = SWStickCal.lstick_center_y - data[1];
-		SWStickCal.lstick_y_max = SWStickCal.lstick_center_y + data[5];
-		
-		DBGPrintf("Left Stick Calibrataion\n");
-		DBGPrintf("center: %d, %d\n", SWStickCal.lstick_center_x, SWStickCal.lstick_center_y );
-		DBGPrintf("min/max x: %d, %d\n", SWStickCal.lstick_x_min, SWStickCal.lstick_x_max);
-		DBGPrintf("min/max y: %d, %d\n", SWStickCal.lstick_y_min, SWStickCal.lstick_y_max);
-		
-		//right stick
-		offset = 29;
-		data[0] = ((buf_[1+offset] << 8) & 0xF00) | buf_[0+offset];
-		data[1] = (buf_[2+offset] << 4) | (buf_[1+offset] >> 4);
-		data[2] = ((buf_[4+offset] << 8) & 0xF00) | buf_[3+offset];
-		data[3] = (buf_[5+offset] << 4) | (buf_[4+offset] >> 4);
-		data[4] = ((buf_[7+offset] << 8) & 0xF00) | buf_[6+offset];
-		data[5] = (buf_[8+offset] << 4) | (buf_[7+offset] >> 4);
-		
-		SWStickCal.rstick_center_x = data[0];
-		SWStickCal.rstick_center_y = data[1];
-		SWStickCal.rstick_x_min = SWStickCal.rstick_center_x - data[2];
-		SWStickCal.rstick_x_max = SWStickCal.rstick_center_x + data[4];
-		SWStickCal.rstick_y_min = SWStickCal.rstick_center_y - data[3];
-		SWStickCal.rstick_y_max = SWStickCal.rstick_center_y + data[5];
-		
-		DBGPrintf("\nRight Stick Calibrataion\n");
-		DBGPrintf("center: %d, %d\n", SWStickCal.rstick_center_x, SWStickCal.rstick_center_y );
-		DBGPrintf("min/max x: %d, %d\n", SWStickCal.rstick_x_min, SWStickCal.rstick_x_max);
-		DBGPrintf("min/max y: %d, %d\n", SWStickCal.rstick_y_min, SWStickCal.rstick_y_max);
-	}  else if((buf_[14] == 0x10 && buf_[15] == 0x86 && buf_[16] == 0x60)){			//left stick deadzone_left
-		offset = 20;
-		SWStickCal.deadzone_left = (((buf_[4 + offset] << 8) & 0xF00) | buf_[3 + offset]);
-		DBGPrintf("\nLeft Stick Deadzone\n");
-		DBGPrintf("deadzone: %d\n", SWStickCal.deadzone_left);
-	}   else if((buf_[14] == 0x10 && buf_[15] == 0x98 && buf_[16] == 0x60)){			//left stick deadzone_left
-		offset = 20;
-		SWStickCal.deadzone_left = (((buf_[4 + offset] << 8) & 0xF00) | buf_[3 + offset]);
-		DBGPrintf("\nRight Stick Deadzone\n");
-		DBGPrintf("deadzone: %d\n", SWStickCal.deadzone_right);
-	} else if((buf_[14] == 0x10 && buf_[15] == 0x10 && buf_[16] == 0x80)){
-		DBGPrintf("\nUser Calibration Rcvd!\n");
-	}
-	
+    int16_t data[6];
+    uint8_t offset = 20;
+    uint8_t icount = 0;
+    //uint8_t packet_[8];
+
+    if((buf_[14] == 0x10 && buf_[15] == 0x20 && buf_[16] == 0x60)) {
+        //parse IMU calibration
+        DBGPrintf("===>  IMU Calibration \n");
+        for(uint8_t i = 0; i < 3; i++) {
+            SWIMUCal.acc_offset[i] = (int16_t)(buf_[icount+offset] | (buf_[icount+offset+1] << 8));
+            SWIMUCal.acc_sensitivity[i] = (int16_t)(buf_[icount+offset+6] | (buf_[icount+offset+1+6] << 8));
+            SWIMUCal.gyro_offset[i] = (int16_t)(buf_[icount+offset+12] | (buf_[icount+offset+1+12] << 8));
+            SWIMUCal.gyro_sensitivity[i] = (int16_t)(buf_[icount+offset+18] | (buf_[icount+offset+1+18] << 8));
+            icount = i * 2;
+        }
+        for(uint8_t i = 0; i < 3; i++) {
+            DBGPrintf("\t %d, %d, %d, %d\n", SWIMUCal.acc_offset[i], SWIMUCal.acc_sensitivity[i],
+                SWIMUCal.gyro_offset[i], SWIMUCal.gyro_sensitivity[i]);
+        }
+    } else if((buf_[14] == 0x10 && buf_[15] == 0x80 && buf_[16] == 0x60)) {
+        //parse IMU calibration
+        DBGPrintf("===>  IMU Calibration Offsets \n");
+        for(uint8_t i = 0; i < 3; i++) {
+            SWIMUCal.acc_offset[i] = (int16_t)(buf_[i+offset] | (buf_[i+offset+1] << 8));
+        }
+        for(uint8_t i = 0; i < 3; i++) {
+            DBGPrintf("\t %d\n", SWIMUCal.acc_offset[i]);
+        }
+    } else if((buf_[14] == 0x10 && buf_[15] == 0x3D && buf_[16] == 0x60)){		//left stick
+        offset = 20;
+        data[0] = ((buf_[1+offset] << 8) & 0xF00) | buf_[0+offset];
+        data[1] = (buf_[2+offset] << 4) | (buf_[1+offset] >> 4);
+        data[2] = ((buf_[4+offset] << 8) & 0xF00) | buf_[3+offset];
+        data[3] = (buf_[5+offset] << 4) | (buf_[4+offset] >> 4);
+        data[4] = ((buf_[7+offset] << 8) & 0xF00) | buf_[6+offset];
+        data[5] = (buf_[8+offset] << 4) | (buf_[7+offset] >> 4);
+
+        SWStickCal.lstick_center_x = data[2];
+        SWStickCal.lstick_center_y = data[3];
+        SWStickCal.lstick_x_min = SWStickCal.lstick_center_x - data[0];
+        SWStickCal.lstick_x_max = SWStickCal.lstick_center_x + data[4];
+        SWStickCal.lstick_y_min = SWStickCal.lstick_center_y - data[1];
+        SWStickCal.lstick_y_max = SWStickCal.lstick_center_y + data[5];
+
+        DBGPrintf("Left Stick Calibrataion\n");
+        DBGPrintf("center: %d, %d\n", SWStickCal.lstick_center_x, SWStickCal.lstick_center_y );
+        DBGPrintf("min/max x: %d, %d\n", SWStickCal.lstick_x_min, SWStickCal.lstick_x_max);
+        DBGPrintf("min/max y: %d, %d\n", SWStickCal.lstick_y_min, SWStickCal.lstick_y_max);
+
+        //right stick
+        offset = 29;
+        data[0] = ((buf_[1+offset] << 8) & 0xF00) | buf_[0+offset];
+        data[1] = (buf_[2+offset] << 4) | (buf_[1+offset] >> 4);
+        data[2] = ((buf_[4+offset] << 8) & 0xF00) | buf_[3+offset];
+        data[3] = (buf_[5+offset] << 4) | (buf_[4+offset] >> 4);
+        data[4] = ((buf_[7+offset] << 8) & 0xF00) | buf_[6+offset];
+        data[5] = (buf_[8+offset] << 4) | (buf_[7+offset] >> 4);
+
+        SWStickCal.rstick_center_x = data[0];
+        SWStickCal.rstick_center_y = data[1];
+        SWStickCal.rstick_x_min = SWStickCal.rstick_center_x - data[2];
+        SWStickCal.rstick_x_max = SWStickCal.rstick_center_x + data[4];
+        SWStickCal.rstick_y_min = SWStickCal.rstick_center_y - data[3];
+        SWStickCal.rstick_y_max = SWStickCal.rstick_center_y + data[5];
+
+        DBGPrintf("\nRight Stick Calibrataion\n");
+        DBGPrintf("center: %d, %d\n", SWStickCal.rstick_center_x, SWStickCal.rstick_center_y );
+        DBGPrintf("min/max x: %d, %d\n", SWStickCal.rstick_x_min, SWStickCal.rstick_x_max);
+        DBGPrintf("min/max y: %d, %d\n", SWStickCal.rstick_y_min, SWStickCal.rstick_y_max);
+    }  else if((buf_[14] == 0x10 && buf_[15] == 0x86 && buf_[16] == 0x60)){			//left stick deadzone_left
+        offset = 20;
+        SWStickCal.deadzone_left = (((buf_[4 + offset] << 8) & 0xF00) | buf_[3 + offset]);
+        DBGPrintf("\nLeft Stick Deadzone\n");
+        DBGPrintf("deadzone: %d\n", SWStickCal.deadzone_left);
+    }   else if((buf_[14] == 0x10 && buf_[15] == 0x98 && buf_[16] == 0x60)){			//left stick deadzone_left
+        offset = 20;
+        SWStickCal.deadzone_left = (((buf_[4 + offset] << 8) & 0xF00) | buf_[3 + offset]);
+        DBGPrintf("\nRight Stick Deadzone\n");
+        DBGPrintf("deadzone: %d\n", SWStickCal.deadzone_right);
+    } else if((buf_[14] == 0x10 && buf_[15] == 0x10 && buf_[16] == 0x80)){
+        DBGPrintf("\nUser Calibration Rcvd!\n");
+    }
+
 }
 
-bool JoystickController::sw_getIMUCalValues(float *accel, float *gyro) 
+bool JoystickController::sw_getIMUCalValues(float *accel, float *gyro)
 {
     // Fail if we don't have actually have those fields. We need axis 8-13 for this
     if ((axis_mask_ & 0x3f00) != 0x3f00) return false;
-	for(uint8_t i = 0; i < 3; i++) {
-		accel[i] = (float)(axis[8+i] - SWIMUCal.acc_offset[i]) * (1.0f / (float)SWIMUCal.acc_sensitivity[i]) * 4.0f;
-		gyro[i]  = (float)(axis[11+i] - SWIMUCal.gyro_offset[i]) * (816.0f / (float)SWIMUCal.gyro_sensitivity[i]);
-	}	
+    for(uint8_t i = 0; i < 3; i++) {
+        accel[i] = (float)(axis[8+i] - SWIMUCal.acc_offset[i]) * (1.0f / (float)SWIMUCal.acc_sensitivity[i]) * 4.0f;
+        gyro[i]  = (float)(axis[11+i] - SWIMUCal.gyro_offset[i]) * (816.0f / (float)SWIMUCal.gyro_sensitivity[i]);
+    }
     return true;
 }
 
@@ -2336,73 +2336,73 @@ bool JoystickController::sw_getIMUCalValues(float *accel, float *gyro)
 #define sw_scale 2048
 void JoystickController::CalcAnalogStick
 (
-	float &pOutX,       // out: resulting stick X value
-	float &pOutY,       // out: resulting stick Y value
-	int16_t x,         // in: initial stick X value
-	int16_t y,         // in: initial stick Y value
-	bool isLeft			// are we dealing with left or right Joystick
+    float &pOutX,       // out: resulting stick X value
+    float &pOutY,       // out: resulting stick Y value
+    int16_t x,         // in: initial stick X value
+    int16_t y,         // in: initial stick Y value
+    bool isLeft			// are we dealing with left or right Joystick
 )
 {
 //		uint16_t x_calc[3],      // calc -X, CenterX, +X
 //		uint16_t y_calc[3]       // calc -Y, CenterY, +Y
 
-	int16_t min_x;
-	int16_t max_x;
-	int16_t center_x;
-	int16_t min_y;		// analog joystick calibration
-	int16_t max_y;
-	int16_t center_y;
-	if(isLeft) {
-		min_x = SWStickCal.lstick_x_min;
-		max_x = SWStickCal.lstick_x_max;
-		center_x = SWStickCal.lstick_center_x;
-		min_y = SWStickCal.lstick_y_min;
-		max_y = SWStickCal.lstick_y_max;
-		center_y = SWStickCal.lstick_center_y;
-	} else {
-		min_x = SWStickCal.rstick_x_min;
-		max_x = SWStickCal.rstick_x_max;
-		center_x = SWStickCal.rstick_center_x;
-		min_y = SWStickCal.rstick_y_min;
-		max_y = SWStickCal.rstick_y_max;
-		center_y = SWStickCal.rstick_center_y;
-	}
+    int16_t min_x;
+    int16_t max_x;
+    int16_t center_x;
+    int16_t min_y;		// analog joystick calibration
+    int16_t max_y;
+    int16_t center_y;
+    if(isLeft) {
+        min_x = SWStickCal.lstick_x_min;
+        max_x = SWStickCal.lstick_x_max;
+        center_x = SWStickCal.lstick_center_x;
+        min_y = SWStickCal.lstick_y_min;
+        max_y = SWStickCal.lstick_y_max;
+        center_y = SWStickCal.lstick_center_y;
+    } else {
+        min_x = SWStickCal.rstick_x_min;
+        max_x = SWStickCal.rstick_x_max;
+        center_x = SWStickCal.rstick_center_x;
+        min_y = SWStickCal.rstick_y_min;
+        max_y = SWStickCal.rstick_y_max;
+        center_y = SWStickCal.rstick_center_y;
+    }
 
 
-	float x_f, y_f;
-	// Apply Joy-Con center deadzone. 0xAE translates approx to 15%. Pro controller has a 10% () deadzone
-	float deadZoneCenter = 0.15f;
-	// Add a small ammount of outer deadzone to avoid edge cases or machine variety.
-	float deadZoneOuter = 0.0f;
+    float x_f, y_f;
+    // Apply Joy-Con center deadzone. 0xAE translates approx to 15%. Pro controller has a 10% () deadzone
+    float deadZoneCenter = 0.15f;
+    // Add a small ammount of outer deadzone to avoid edge cases or machine variety.
+    float deadZoneOuter = 0.0f;
 
-	// convert to float based on calibration and valid ranges per +/-axis
-	x = clamp(x, min_x, max_x);
-	y = clamp(y, min_y, max_y);
-	if (x >= center_x) {
-		x_f = (float)(x - center_x) / (float)(max_x - center_x);
-	} else {
-		x_f = -((float)(x - center_x) / (float)(min_x - center_x));
-	}
-	if (y >= center_y) {
-		y_f = (float)(y - center_y) / (float)(max_y - center_y);
-	} else {
-		y_f = -((float)(y - center_y) / (float)(min_y - center_y));
-	}
+    // convert to float based on calibration and valid ranges per +/-axis
+    x = clamp(x, min_x, max_x);
+    y = clamp(y, min_y, max_y);
+    if (x >= center_x) {
+        x_f = (float)(x - center_x) / (float)(max_x - center_x);
+    } else {
+        x_f = -((float)(x - center_x) / (float)(min_x - center_x));
+    }
+    if (y >= center_y) {
+        y_f = (float)(y - center_y) / (float)(max_y - center_y);
+    } else {
+        y_f = -((float)(y - center_y) / (float)(min_y - center_y));
+    }
 
-	// Interpolate zone between deadzones
-	float mag = sqrtf(x_f*x_f + y_f*y_f);
-	if (mag > deadZoneCenter) {
-		// scale such that output magnitude is in the range [0.0f, 1.0f]
-		float legalRange = 1.0f - deadZoneOuter - deadZoneCenter;
-		float normalizedMag = min(1.0f, (mag - deadZoneCenter) / legalRange);
-		float scale = normalizedMag / mag;
-		pOutX = (x_f * scale * sw_scale);
-		pOutY = (y_f * scale * sw_scale);
-	} else {
-		// stick is in the inner dead zone
-		pOutX = 0.0f;
-		pOutY = 0.0f;
-	}
-	
+    // Interpolate zone between deadzones
+    float mag = sqrtf(x_f*x_f + y_f*y_f);
+    if (mag > deadZoneCenter) {
+        // scale such that output magnitude is in the range [0.0f, 1.0f]
+        float legalRange = 1.0f - deadZoneOuter - deadZoneCenter;
+        float normalizedMag = min(1.0f, (mag - deadZoneCenter) / legalRange);
+        float scale = normalizedMag / mag;
+        pOutX = (x_f * scale * sw_scale);
+        pOutY = (y_f * scale * sw_scale);
+    } else {
+        // stick is in the inner dead zone
+        pOutX = 0.0f;
+        pOutY = 0.0f;
+    }
+
 
 }
