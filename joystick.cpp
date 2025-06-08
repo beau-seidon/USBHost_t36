@@ -27,7 +27,7 @@
 #define print   USBHost::print_
 #define println USBHost::println_
 
-//#define DEBUG_JOYSTICK
+// #define DEBUG_JOYSTICK
 #ifdef  DEBUG_JOYSTICK
 #define DBGPrintf USBHDBGSerial.printf
 #else
@@ -62,8 +62,8 @@ JoystickController::product_vendor_mapping_t JoystickController::pid_vid_mapping
     { 0x045e, 0x02dd, XBOXONE, false },  // Xbox One Controller
     { 0x045e, 0x02ea, XBOXONE, false },  // Xbox One S Controller
     { 0x045e, 0x0b12, XBOXONE, false },  // Xbox Core Controller (Series S/X)
-    { 0x045e, 0x0719, XBOX360, false},
-    { 0x045e, 0x028E, SWITCH, false},  // Switch?
+    { 0x045e, 0x0719, XBOX360W, false},
+    { 0x045e, 0x028e, XBOX360USB, false},  // Xbox360 Wired Controller
     { 0x057E, 0x2009, SWITCH, true},   // Switch Pro controller.  // Let the swtich grab it, but...
     { 0x0079, 0x201C, SWITCH, false},
     { 0x054C, 0x0268, PS3, true},
@@ -251,7 +251,7 @@ bool JoystickController::setRumble(uint8_t lValue, uint8_t rValue, uint8_t timeo
             println("XBoxOne rumble transfer fail");
         }
         return true;    //
-    case XBOX360:
+    case XBOX360W:
         txbuf_[0] = 0x00;
         txbuf_[1] = 0x01;
         txbuf_[2] = 0x0F;
@@ -265,7 +265,24 @@ bool JoystickController::setRumble(uint8_t lValue, uint8_t rValue, uint8_t timeo
         txbuf_[10] = 0x00;
         txbuf_[11] = 0x00;
         if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 12, this, __LINE__)) {
-            println("XBox360 rumble transfer fail");
+            println("XBox360w rumble transfer fail");
+        }
+        return true;
+    case XBOX360USB:
+        // Rumble commands take the following 8-byte form:
+        // 00 08 00 bb ll 00 00 00
+        // Where b is the speed to set the motor with the big weight, and l is the speed to set the small weight (0x00 to 0xFF in both cases).
+
+        txbuf_[0] = 0x00;
+        txbuf_[1] = 0x08;
+        txbuf_[2] = 0x00;
+        txbuf_[3] = lValue;
+        txbuf_[4] = rValue;
+        txbuf_[5] = 0x00;
+        txbuf_[6] = 0x00;
+        txbuf_[7] = 0x00;
+        if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 8, this, __LINE__)) {
+            println("XBox360usb rumble transfer fail");
         }
         return true;
     case SWITCH:
@@ -375,7 +392,7 @@ bool JoystickController::setLEDs(uint8_t lr, uint8_t lg, uint8_t lb)
             return transmitPS3MotionUserFeedbackMsg();
         case PS4:
             return transmitPS4UserFeedbackMsg();
-        case XBOX360:
+        case XBOX360W:
             // 0: off, 1: all blink then return to before
             // 2-5(TL, TR, BL, BR) - blink on then stay on
             // 6-9() - On
@@ -392,7 +409,31 @@ bool JoystickController::setLEDs(uint8_t lr, uint8_t lg, uint8_t lb)
             txbuf_[10] = 0x00;
             txbuf_[11] = 0x00;
             if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 12, this, __LINE__)) {
-                println("XBox360 set leds fail");
+                println("XBox360w set leds fail");
+            }
+            return true;
+        case XBOX360USB:
+            // Pattern	 Description
+            // 0x00	 All off
+            // 0x01	 All blinking
+            // 0x02	 1 flashes, then on
+            // 0x03	 2 flashes, then on
+            // 0x04	 3 flashes, then on
+            // 0x05	 4 flashes, then on
+            // 0x06	 1 on
+            // 0x07	 2 on
+            // 0x08	 3 on
+            // 0x09	 4 on
+            // 0x0A	 Rotating (e.g. 1-2-4-3)
+            // 0x0B	 Blinking*
+            // 0x0C	 Slow blinking*
+            // 0x0D	 Alternating (e.g. 1+4-2+3), then back to previous*
+
+            txbuf_[0] = 0x01;
+            txbuf_[1] = 0x03;
+            txbuf_[2] = lr;
+            if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 3, this, __LINE__)) {
+                println("XBox360usb set leds fail");
             }
             return true;
         case SWITCH:
@@ -920,6 +961,7 @@ void JoystickController::joystickDataClear() {
 
 static  uint8_t xboxone_start_input[] = {0x05, 0x20, 0x00, 0x01, 0x00};
 static  uint8_t xbox360w_inquire_present[] = {0x08, 0x00, 0x0F, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+static  uint8_t xbox360usb_start_input[] = {0x80, 0x02};
 //static  uint8_t switch_start_input[] = {0x19, 0x01, 0x03, 0x07, 0x00, 0x00, 0x92, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10};
 static  uint8_t switch_start_input[] = {0x80, 0x02};
 bool JoystickController::claim(Device_t *dev, int type, const uint8_t *descriptors, uint32_t len)
@@ -1024,9 +1066,12 @@ bool JoystickController::claim(Device_t *dev, int type, const uint8_t *descripto
     if (jtype == XBOXONE) {
         queue_Data_Transfer_Debug(txpipe_, xboxone_start_input, sizeof(xboxone_start_input), this, __LINE__);
         connected_ = true;      // remember that hardware is actually connected...
-    } else if (jtype == XBOX360) {
+    } else if (jtype == XBOX360W) {
         queue_Data_Transfer_Debug(txpipe_, xbox360w_inquire_present, sizeof(xbox360w_inquire_present), this, __LINE__);
         connected_ = 0;     // remember that hardware is actually connected...
+    } else if (jtype == XBOX360USB) {
+        queue_Data_Transfer_Debug(txpipe_, xbox360usb_start_input, sizeof(xbox360usb_start_input), this, __LINE__);
+        connected_ = 0;     // check for hardware connection in rx_data
     } else if (jtype == SWITCH) {
         queue_Data_Transfer_Debug(txpipe_, switch_start_input, sizeof(switch_start_input), this, __LINE__);
         connected_ = true;      // remember that hardware is actually connected...
@@ -1102,6 +1147,45 @@ typedef struct {
 } xbox360data_t;
 
 typedef struct {
+    // https://www.partsnotincluded.com/understanding-the-xbox-360-wired-controllers-usb-data/
+    // https://web.archive.org/web/20171024182650/http://free60.org:80/wiki/GamePad
+    //      Offset      Length (bits)   Description	                    Windows driver
+    //      0x00.0      8               Message type
+    //      0x01.0      8               Packet size (20 bytes = 0x14)
+    //      0x02.0      1               D-Pad up                        D-Pad up
+    //      0x02.1      1               D-Pad down                      D-Pad down
+    //      0x02.2      1               D-Pad left                      D-Pad left
+    //      0x02.3      1               D-pad right                     D-Pad right
+    //      0x02.4      1               Start button                    Button 8
+    //      0x02.5      1               Back button                     Button 7
+    //      0x02.6      1               Left stick press                Button 9
+    //      0x02.7      1               Right stick press               Button 10
+    //      0x03.0      1               Button LB                       Button 5
+    //      0x03.1      1               Button RB                       Button 6
+    //      0x03.2      1               Xbox logo button                Button 11
+    //      0x03.3      1               Unused
+    //      0x03.4      1               Button A                        Button 1
+    //      0x03.5      1               Button B                        Button 2
+    //      0x03.6      1               Button X                        Button 3
+    //      0x03.7      1               Button Y                        Button 4
+    //      0x04.0      8               Left trigger                    Z-axis down
+    //      0x05.0      8               Right trigger                   Z-axis up
+    //      0x06.0      16              Left stick X-axis               X-axis
+    //      0x08.0      16              Left stick Y-axis               Y-axis
+    //      0x0a.0      16              Right stick X-axis              X-turn
+    //      0x0c.0      16              Right stick Y-axis              Y-turn
+    //      0x0e.0      48              Unused
+    uint8_t msg_type;
+    uint8_t msg_length;
+    uint8_t buttons_h; // R3, L3, Back, Start, D_R, D_L, D_Dn, D_Up
+    uint8_t buttons_l; // Y, X, B, A, _, (X), RB, LB
+    uint8_t lt;
+    uint8_t rt;
+    uint8_t axis[8]; // RY-, RY+, RX-, RX+, LY-, LY+, LX-, LX+
+    // bytes 14-19 unused
+} xbox360usbdata_t;
+
+typedef struct {
     uint8_t state;
     uint8_t id_or_type;
     // From online references button order:
@@ -1153,7 +1237,7 @@ void JoystickController::rx_data(const Transfer_t *transfer)
             joystickEvent = true;
         }
 
-    } else if (joystickType_ == XBOX360) {
+    } else if (joystickType_ == XBOX360W) {
         // First byte appears to status - if the byte is 0x8 it is a connect or disconnect of the controller.
         xbox360data_t  *xb360d = (xbox360data_t *)transfer->buffer;
         if (xb360d->state == 0x08) {
@@ -1205,6 +1289,54 @@ void JoystickController::rx_data(const Transfer_t *transfer)
 
             if (anychange) joystickEvent = true;
         }
+
+    } else if (joystickType_ == XBOX360USB) {
+        xbox360usbdata_t  *xb360usbd = (xbox360usbdata_t *)transfer->buffer;
+
+        if (xb360usbd->msg_type == 0x08) { // Controller Connect/Disconnect
+            if (xb360usbd->msg_length != connected_) {
+                connected_ = true;
+                if (connected_) {
+                    println("XBox360usb - Connected");
+                    // rx_ep_ should be 1, 3, 5, 7 for the wireless convert to 2-5 on led
+                    setLEDs(0x0A, 0, 0); setLEDs(0x02, 0, 0); // Right now hard coded to first joystick...
+                    // println(rx_ep_); // in my tests this prints 129 (decimal)
+                } else {
+                    println("XBox360usb - Disconnected");
+                }
+            }
+        } else if (xb360usbd->msg_type == 0x00) { // Controller Input Report
+            uint16_t cur_buttons = (xb360usbd->buttons_h << 8) | xb360usbd->buttons_l;
+            if (buttons != cur_buttons) {
+                buttons = cur_buttons;
+                anychange = true;
+            }
+
+            axis_mask_ = 0x3f;
+            axis_changed_mask_ = 0;
+
+            if (axis[4] != xb360usbd->lt) {
+                axis[4] = xb360usbd->lt;
+                axis_changed_mask_ |= (1 << 4);
+                anychange = true;
+            }
+            if (axis[5] != xb360usbd->rt) {
+                axis[5] = xb360usbd->rt;
+                axis_changed_mask_ |= (1 << 5);
+                anychange = true;
+            }
+
+            for (uint8_t i = 0; i < 8; i++) {
+                if (axis[6+i] != xb360usbd->axis[i]) {
+                    axis[6+i] = xb360usbd->axis[i];
+                    axis_changed_mask_ |= (1 << (6+i));
+                    anychange = true;
+                }
+            }
+
+            if (anychange) joystickEvent = true;
+        }
+
     } else if (joystickType_ == SWITCH) {
         uint8_t packet[8];
         if(initialPass_ == true) {
