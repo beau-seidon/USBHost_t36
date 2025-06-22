@@ -1257,6 +1257,7 @@ void JoystickController::joystickDataClear() {
 //*****************************************************************************
 
 static  uint8_t xboxone_start_input[] = {0x05, 0x20, 0x00, 0x01, 0x00};
+static  uint8_t xboxone_start_pdp_afterglow[] = {0x06, 0x20, 0x07, 0x02, 0x01, 0x00};
 static  uint8_t xbox360w_inquire_present[] = {0x08, 0x00, 0x0F, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static  uint8_t xbox360usb_start_input[] = {0x80, 0x02};
 //static  uint8_t switch_start_input[] = {0x19, 0x01, 0x03, 0x07, 0x00, 0x00, 0x92, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10};
@@ -1513,6 +1514,9 @@ void JoystickController::rx_data(const Transfer_t *transfer)
         axis_mask_ = 0x3f;
         axis_changed_mask_ = 0; // assume none for now
         xbox1data20_t *xb1d = (xbox1data20_t *)transfer->buffer;
+        if (xb1d->type == 0x03) {
+            queue_Data_Transfer_Debug(txpipe_, xboxone_start_pdp_afterglow, sizeof(xboxone_start_pdp_afterglow), this, __LINE__);
+        } else
         if ((xb1d->type == 0x20) && (transfer->length >= sizeof (xbox1data20_t))) {
             // We have a data transfer.  Lets see what is new...
             if (xb1d->buttons != buttons) {
