@@ -36,14 +36,16 @@
 
 
 template<class T>
-const T& clamp(const T& x, const T& lower, const T& upper) {
+const T& clamp(const T& x, const T& lower, const T& upper)
+{
     return min(upper, max(x, lower));
 }
 
+
 bool ack_rvd = false;
 
-bool JoystickController::queue_Data_Transfer_Debug(Pipe_t *pipe, void *buffer,
-    uint32_t len, USBDriver *driver, uint32_t line)
+
+bool JoystickController::queue_Data_Transfer_Debug(Pipe_t *pipe, void *buffer, uint32_t len, USBDriver *driver, uint32_t line)
 {
     if ((pipe == nullptr) || (driver == nullptr) || ((len > 0) && (buffer == nullptr))) {
         // something wrong:
@@ -54,322 +56,325 @@ bool JoystickController::queue_Data_Transfer_Debug(Pipe_t *pipe, void *buffer,
     return queue_Data_Transfer(pipe, buffer, len, driver);
 }
 
-void print_rx_data(uint8_t *ptr, uint32_t len) {
-    for (uint32_t i = 0; i < len; ++i){
+
+void print_rx_data(uint8_t *ptr, uint32_t len)
+{
+    for (uint32_t i = 0; i < len; ++i) {
         USBHDBGSerial.printf("%02X ", ptr[i]);
     }
     USBHDBGSerial.printf("\n");
 }
 
 
-// PID/VID to joystick mapping - Only the XBOXOne is used to claim the USB interface directly,
+// PID/VID to joystick mapping - Only the XBOX* is used to claim the USB interface directly,
 // The others are used after claim-hid code to know which one we have and to use it for
 // doing other features.
 JoystickController::product_vendor_mapping_t JoystickController::pid_vid_mapping[] = {
-    { 0x057E, 0x2009, SWITCH, true},   // Switch Pro controller.  // Let the swtich grab it, but...
-    { 0x0079, 0x201C, SWITCH, false},
-    { 0x054C, 0x0268, PS3, true},
-    { 0x054C, 0x042F, PS3, true},   // PS3 Navigation controller
-    { 0x054C, 0x03D5, PS3_MOTION, true},    // PS3 Motion controller
-    { 0x054C, 0x05C4, PS4, true},   {0x054C, 0x09CC, PS4, true },
-    { 0x0A5C, 0x21E8, PS4, true},
-    { 0x046D, 0xC626, SpaceNav, true},  // 3d Connextion Space Navigator, 0x10008
-    { 0x046D, 0xC628, SpaceNav, true},  // 3d Connextion Space Navigator, 0x10008
+    {0x057e, 0x2009, SWITCH, true},  // Switch Pro controller.  // Let the swtich grab it, but...
+    {0x0079, 0x201c, SWITCH, false},
+    {0x054c, 0x0268, PS3, true},
+    {0x054c, 0x042f, PS3, true},  // PS3 Navigation controller
+    {0x054c, 0x03d5, PS3_MOTION, true},  // PS3 Motion controller
+    {0x054c, 0x05c4, PS4, true},
+    {0x054C, 0x09CC, PS4, true},
+    {0x0a5c, 0x21e8, PS4, true},
+    {0x046d, 0xc626, SpaceNav, true},  // 3d Connextion Space Navigator, 0x10008
+    {0x046d, 0xc628, SpaceNav, true},  // 3d Connextion Space Navigator, 0x10008
 
 // stolen from https://github.com/torvalds/linux/blob/master/drivers/input/joystick/xpad.c#L134
     /* Please keep this list sorted by vendor and product ID. */
-    { 0x0079, 0x18d4, XBOX360USB, false}, // "GPD Win 2 X-Box Controller", 0, XTYPE_XBOX360 },
-    { 0x03eb, 0xff01, XBOX360USB, false}, // "Wooting One (Legacy)", 0, XTYPE_XBOX360 },
-    { 0x03eb, 0xff02, XBOX360USB, false}, // "Wooting Two (Legacy)", 0, XTYPE_XBOX360 },
-    { 0x03f0, 0x038D, XBOX360USB, false}, // "HyperX Clutch", 0, XTYPE_XBOX360 },			/* wired */
-    { 0x03f0, 0x048D, XBOX360W, false}, // "HyperX Clutch", 0, XTYPE_XBOX360 },			/* wireless */
-    { 0x03f0, 0x0495, XBOXONE, false}, // "HyperX Clutch Gladiate", 0, XTYPE_XBOXONE },
-    { 0x03f0, 0x07A0, XBOXONE, false}, // "HyperX Clutch Gladiate RGB", 0, XTYPE_XBOXONE },
-    { 0x03f0, 0x08B6, XBOXONE, false}, // "HyperX Clutch Gladiate", MAP_SHARE_BUTTON, XTYPE_XBOXONE },		/* v2 */
-    { 0x03f0, 0x09B4, XBOXONE, false}, // "HyperX Clutch Tanto", 0, XTYPE_XBOXONE },
-    // { 0x044f, 0x0f00, XBOX, false}, // "Thrustmaster Wheel", 0, XTYPE_XBOX },
-    // { 0x044f, 0x0f03, XBOX, false}, // "Thrustmaster Wheel", 0, XTYPE_XBOX },
-    // { 0x044f, 0x0f07, XBOX, false}, // "Thrustmaster, Inc. Controller", 0, XTYPE_XBOX },
-    // { 0x044f, 0x0f10, XBOX, false}, // "Thrustmaster Modena GT Wheel", 0, XTYPE_XBOX },
-    { 0x044f, 0xb326, XBOX360USB, false}, // "Thrustmaster Gamepad GP XID", 0, XTYPE_XBOX360 },
-    { 0x044f, 0xd01e, XBOXONE, false}, // "ThrustMaster, Inc. ESWAP X 2 ELDEN RING EDITION", 0, XTYPE_XBOXONE },
-    // { 0x045e, 0x0202, XBOX, false}, // "Microsoft X-Box pad v1 (US)", 0, XTYPE_XBOX },
-    // { 0x045e, 0x0285, XBOX, false}, // "Microsoft X-Box pad (Japan)", 0, XTYPE_XBOX },
-    // { 0x045e, 0x0287, XBOX, false}, // "Microsoft Xbox Controller S", 0, XTYPE_XBOX },
-    // { 0x045e, 0x0288, XBOX, false}, // "Microsoft Xbox Controller S v2", 0, XTYPE_XBOX },
-    // { 0x045e, 0x0289, XBOX, false}, // "Microsoft X-Box pad v2 (US)", 0, XTYPE_XBOX },
-    { 0x045e, 0x028e, XBOX360USB, false}, // "Microsoft X-Box 360 pad", 0, XTYPE_XBOX360 },
-    { 0x045e, 0x028f, XBOX360USB, false}, // "Microsoft X-Box 360 pad v2", 0, XTYPE_XBOX360 },
-    { 0x045e, 0x0291, XBOX360W, false}, // "Xbox 360 Wireless Receiver (XBOX)", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
-    { 0x045e, 0x02a9, XBOX360W, false}, // "Xbox 360 Wireless Receiver (Unofficial)", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
-    { 0x045e, 0x02d1, XBOXONE, false}, // "Microsoft X-Box One pad", 0, XTYPE_XBOXONE },
-    { 0x045e, 0x02dd, XBOXONE, false}, // "Microsoft X-Box One pad (Firmware 2015)", 0, XTYPE_XBOXONE },
-    { 0x045e, 0x02e3, XBOXONE, false}, // "Microsoft X-Box One Elite pad", MAP_PADDLES, XTYPE_XBOXONE },
-    { 0x045e, 0x02ea, XBOXONE, false}, // "Microsoft X-Box One S pad", 0, XTYPE_XBOXONE },
-    { 0x045e, 0x0719, XBOX360W, false}, // "Xbox 360 Wireless Receiver", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
-    { 0x045e, 0x0b00, XBOXONE, false}, // "Microsoft X-Box One Elite 2 pad", MAP_PADDLES, XTYPE_XBOXONE },
-    { 0x045e, 0x0b0a, XBOXONE, false}, // "Microsoft X-Box Adaptive Controller", MAP_PROFILE_BUTTON, XTYPE_XBOXONE },
-    { 0x045e, 0x0b12, XBOXONE, false}, // "Microsoft Xbox Series S|X Controller", MAP_SHARE_BUTTON | MAP_SHARE_OFFSET, XTYPE_XBOXONE },
-    { 0x046d, 0xc21d, XBOX360USB, false}, // "Logitech Gamepad F310", 0, XTYPE_XBOX360 },
-    { 0x046d, 0xc21e, XBOX360USB, false}, // "Logitech Gamepad F510", 0, XTYPE_XBOX360 },
-    { 0x046d, 0xc21f, XBOX360USB, false}, // "Logitech Gamepad F710", 0, XTYPE_XBOX360 },
-    { 0x046d, 0xc242, XBOX360USB, false}, // "Logitech Chillstream Controller", 0, XTYPE_XBOX360 },
-    // { 0x046d, 0xca84, XBOX, false}, // "Logitech Xbox Cordless Controller", 0, XTYPE_XBOX },
-    // { 0x046d, 0xca88, XBOX, false}, // "Logitech Compact Controller for Xbox", 0, XTYPE_XBOX },
-    // { 0x046d, 0xca8a, XBOX, false}, // "Logitech Precision Vibration Feedback Wheel", 0, XTYPE_XBOX },
-    { 0x046d, 0xcaa3, XBOX360USB, false}, // "Logitech DriveFx Racing Wheel", 0, XTYPE_XBOX360 },
-    { 0x056e, 0x2004, XBOX360USB, false}, // "Elecom JC-U3613M", 0, XTYPE_XBOX360 },
-    // { 0x05fd, 0x1007, XBOX, false}, // "Mad Catz Controller (unverified)", 0, XTYPE_XBOX },
-    // { 0x05fd, 0x107a, XBOX, false}, // "InterAct 'PowerPad Pro' X-Box pad (Germany)", 0, XTYPE_XBOX },
-    // { 0x05fe, 0x3030, XBOX, false}, // "Chic Controller", 0, XTYPE_XBOX },
-    // { 0x05fe, 0x3031, XBOX, false}, // "Chic Controller", 0, XTYPE_XBOX },
-    // { 0x062a, 0x0020, XBOX, false}, // "Logic3 Xbox GamePad", 0, XTYPE_XBOX },
-    // { 0x062a, 0x0033, XBOX, false}, // "Competition Pro Steering Wheel", 0, XTYPE_XBOX },
-    // { 0x06a3, 0x0200, XBOX, false}, // "Saitek Racing Wheel", 0, XTYPE_XBOX },
-    // { 0x06a3, 0x0201, XBOX, false}, // "Saitek Adrenalin", 0, XTYPE_XBOX },
-    { 0x06a3, 0xf51a, XBOX360USB, false}, // "Saitek P3600", 0, XTYPE_XBOX360 },
-    { 0x0738, 0x4503, XBOXONE, false}, // "Mad Catz Racing Wheel", 0, XTYPE_XBOXONE },
-    // { 0x0738, 0x4506, XBOX, false}, // "Mad Catz 4506 Wireless Controller", 0, XTYPE_XBOX },
-    // { 0x0738, 0x4516, XBOX, false}, // "Mad Catz Control Pad", 0, XTYPE_XBOX },
-    // { 0x0738, 0x4520, XBOX, false}, // "Mad Catz Control Pad Pro", 0, XTYPE_XBOX },
-    // { 0x0738, 0x4522, XBOX, false}, // "Mad Catz LumiCON", 0, XTYPE_XBOX },
-    // { 0x0738, 0x4526, XBOX, false}, // "Mad Catz Control Pad Pro", 0, XTYPE_XBOX },
-    // { 0x0738, 0x4530, XBOX, false}, // "Mad Catz Universal MC2 Racing Wheel and Pedals", 0, XTYPE_XBOX },
-    // { 0x0738, 0x4536, XBOX, false}, // "Mad Catz MicroCON", 0, XTYPE_XBOX },
-    // { 0x0738, 0x4540, XBOX, false}, // "Mad Catz Beat Pad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
-    // { 0x0738, 0x4556, XBOX, false}, // "Mad Catz Lynx Wireless Controller", 0, XTYPE_XBOX },
-    // { 0x0738, 0x4586, XBOX, false}, // "Mad Catz MicroCon Wireless Controller", 0, XTYPE_XBOX },
-    // { 0x0738, 0x4588, XBOX, false}, // "Mad Catz Blaster", 0, XTYPE_XBOX },
-    // { 0x0738, 0x45ff, XBOX, false}, // "Mad Catz Beat Pad (w/ Handle)", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
-    { 0x0738, 0x4716, XBOX360USB, false}, // "Mad Catz Wired Xbox 360 Controller", 0, XTYPE_XBOX360 },
-    { 0x0738, 0x4718, XBOX360USB, false}, // "Mad Catz Street Fighter IV FightStick SE", 0, XTYPE_XBOX360 },
-    { 0x0738, 0x4726, XBOX360USB, false}, // "Mad Catz Xbox 360 Controller", 0, XTYPE_XBOX360 },
-    { 0x0738, 0x4728, XBOX360USB, false}, // "Mad Catz Street Fighter IV FightPad", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x0738, 0x4736, XBOX360USB, false}, // "Mad Catz MicroCon Gamepad", 0, XTYPE_XBOX360 },
-    { 0x0738, 0x4738, XBOX360USB, false}, // "Mad Catz Wired Xbox 360 Controller (SFIV)", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x0738, 0x4740, XBOX360USB, false}, // "Mad Catz Beat Pad", 0, XTYPE_XBOX360 },
-    // { 0x0738, 0x4743, XBOX, false}, // "Mad Catz Beat Pad Pro", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
-    { 0x0738, 0x4758, XBOX360USB, false}, // "Mad Catz Arcade Game Stick", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x0738, 0x4a01, XBOXONE, false}, // "Mad Catz FightStick TE 2", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOXONE },
-    // { 0x0738, 0x6040, XBOX, false}, // "Mad Catz Beat Pad Pro", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
-    { 0x0738, 0x9871, XBOX360USB, false}, // "Mad Catz Portable Drum", 0, XTYPE_XBOX360 },
-    { 0x0738, 0xb726, XBOX360USB, false}, // "Mad Catz Xbox controller - MW2", 0, XTYPE_XBOX360 },
-    { 0x0738, 0xb738, XBOX360USB, false}, // "Mad Catz MVC2TE Stick 2", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x0738, 0xbeef, XBOX360USB, false}, // "Mad Catz JOYTECH NEO SE Advanced GamePad", 0, XTYPE_XBOX360 },
-    { 0x0738, 0xcb02, XBOX360USB, false}, // "Saitek Cyborg Rumble Pad - PC/Xbox 360", 0, XTYPE_XBOX360 },
-    { 0x0738, 0xcb03, XBOX360USB, false}, // "Saitek P3200 Rumble Pad - PC/Xbox 360", 0, XTYPE_XBOX360 },
-    { 0x0738, 0xcb29, XBOX360USB, false}, // "Saitek Aviator Stick AV8R02", 0, XTYPE_XBOX360 },
-    { 0x0738, 0xf738, XBOX360USB, false}, // "Super SFIV FightStick TE S", 0, XTYPE_XBOX360 },
-    { 0x07ff, 0xffff, XBOX360USB, false}, // "Mad Catz GamePad", 0, XTYPE_XBOX360 },
-    { 0x0b05, 0x1a38, XBOXONE, false}, // "ASUS ROG RAIKIRI", MAP_SHARE_BUTTON, XTYPE_XBOXONE },
-    { 0x0b05, 0x1abb, XBOXONE, false}, // "ASUS ROG RAIKIRI PRO", 0, XTYPE_XBOXONE },
-    // { 0x0c12, 0x0005, XBOX, false}, // "Intec wireless", 0, XTYPE_XBOX },
-    // { 0x0c12, 0x8801, XBOX, false}, // "Nyko Xbox Controller", 0, XTYPE_XBOX },
-    // { 0x0c12, 0x8802, XBOX, false}, // "Zeroplus Xbox Controller", 0, XTYPE_XBOX },
-    // { 0x0c12, 0x8809, XBOX, false}, // "RedOctane Xbox Dance Pad", DANCEPAD_MAP_CONFIG, XTYPE_XBOX },
-    // { 0x0c12, 0x880a, XBOX, false}, // "Pelican Eclipse PL-2023", 0, XTYPE_XBOX },
-    // { 0x0c12, 0x8810, XBOX, false}, // "Zeroplus Xbox Controller", 0, XTYPE_XBOX },
-    // { 0x0c12, 0x9902, XBOX, false}, // "HAMA VibraX - *FAULTY HARDWARE*", 0, XTYPE_XBOX },
-    // { 0x0d2f, 0x0002, XBOX, false}, // "Andamiro Pump It Up pad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
-    { 0x0db0, 0x1901, XBOX360USB, false}, // "Micro Star International Xbox360 Controller for Windows", 0, XTYPE_XBOX360 },
-    // { 0x0e4c, 0x1097, XBOX, false}, // "Radica Gamester Controller", 0, XTYPE_XBOX },
-    // { 0x0e4c, 0x1103, XBOX, false}, // "Radica Gamester Reflex", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX },
-    // { 0x0e4c, 0x2390, XBOX, false}, // "Radica Games Jtech Controller", 0, XTYPE_XBOX },
-    // { 0x0e4c, 0x3510, XBOX, false}, // "Radica Gamester", 0, XTYPE_XBOX },
-    // { 0x0e6f, 0x0003, XBOX, false}, // "Logic3 Freebird wireless Controller", 0, XTYPE_XBOX },
-    // { 0x0e6f, 0x0005, XBOX, false}, // "Eclipse wireless Controller", 0, XTYPE_XBOX },
-    // { 0x0e6f, 0x0006, XBOX, false}, // "Edge wireless Controller", 0, XTYPE_XBOX },
-    // { 0x0e6f, 0x0008, XBOX, false}, // "After Glow Pro Controller", 0, XTYPE_XBOX },
-    { 0x0e6f, 0x0105, XBOX360USB, false}, // "HSM3 Xbox360 dancepad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x0e6f, 0x0113, XBOX360USB, false}, // "Afterglow AX.1 Gamepad for Xbox 360", 0, XTYPE_XBOX360 },
-    { 0x0e6f, 0x011f, XBOX360USB, false}, // "Rock Candy Gamepad Wired Controller", 0, XTYPE_XBOX360 },
-    { 0x0e6f, 0x0131, XBOX360USB, false}, // "PDP EA Sports Controller", 0, XTYPE_XBOX360 },
-    { 0x0e6f, 0x0133, XBOX360USB, false}, // "Xbox 360 Wired Controller", 0, XTYPE_XBOX360 },
-    { 0x0e6f, 0x0139, XBOXONE, false}, // "Afterglow Prismatic Wired Controller", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x013a, XBOXONE, false}, // "PDP Xbox One Controller", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x0146, XBOXONE, false}, // "Rock Candy Wired Controller for Xbox One", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x0147, XBOXONE, false}, // "PDP Marvel Xbox One Controller", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x015c, XBOXONE, false}, // "PDP Xbox One Arcade Stick", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOXONE },
-    { 0x0e6f, 0x015d, XBOXONE, false}, // "PDP Mirror's Edge Official Wired Controller for Xbox One", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x0161, XBOXONE, false}, // "PDP Xbox One Controller", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x0162, XBOXONE, false}, // "PDP Xbox One Controller", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x0163, XBOXONE, false}, // "PDP Xbox One Controller", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x0164, XBOXONE, false}, // "PDP Battlefield One", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x0165, XBOXONE, false}, // "PDP Titanfall 2", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x0201, XBOX360USB, false}, // "Pelican PL-3601 'TSZ' Wired Xbox 360 Controller", 0, XTYPE_XBOX360 },
-    { 0x0e6f, 0x0213, XBOX360USB, false}, // "Afterglow Gamepad for Xbox 360", 0, XTYPE_XBOX360 },
-    { 0x0e6f, 0x021f, XBOX360USB, false}, // "Rock Candy Gamepad for Xbox 360", 0, XTYPE_XBOX360 },
-    { 0x0e6f, 0x0246, XBOXONE, false}, // "Rock Candy Gamepad for Xbox One 2015", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x02a0, XBOXONE, false}, // "PDP Xbox One Controller", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x02a1, XBOXONE, false}, // "PDP Xbox One Controller", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x02a2, XBOXONE, false}, // "PDP Wired Controller for Xbox One - Crimson Red", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x02a4, XBOXONE, false}, // "PDP Wired Controller for Xbox One - Stealth Series", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x02a6, XBOXONE, false}, // "PDP Wired Controller for Xbox One - Camo Series", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x02a7, XBOXONE, false}, // "PDP Xbox One Controller", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x02a8, XBOXONE, false}, // "PDP Xbox One Controller", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x02ab, XBOXONE, false}, // "PDP Controller for Xbox One", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x02ad, XBOXONE, false}, // "PDP Wired Controller for Xbox One - Stealth Series", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x02b3, XBOXONE, false}, // "Afterglow Prismatic Wired Controller", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x02b8, XBOXONE, false}, // "Afterglow Prismatic Wired Controller", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x0301, XBOX360USB, false}, // "Logic3 Controller", 0, XTYPE_XBOX360 },
-    { 0x0e6f, 0x0346, XBOXONE, false}, // "Rock Candy Gamepad for Xbox One 2016", 0, XTYPE_XBOXONE },
-    { 0x0e6f, 0x0401, XBOX360USB, false}, // "Logic3 Controller", 0, XTYPE_XBOX360 },
-    { 0x0e6f, 0x0413, XBOX360USB, false}, // "Afterglow AX.1 Gamepad for Xbox 360", 0, XTYPE_XBOX360 },
-    { 0x0e6f, 0x0501, XBOX360USB, false}, // "PDP Xbox 360 Controller", 0, XTYPE_XBOX360 },
-    { 0x0e6f, 0xf900, XBOX360USB, false}, // "PDP Afterglow AX.1", 0, XTYPE_XBOX360 },
-    // { 0x0e8f, 0x0201, XBOX, false}, // "SmartJoy Frag Xpad/PS2 adaptor", 0, XTYPE_XBOX },
-    // { 0x0e8f, 0x3008, XBOX, false}, // "Generic xbox control (dealextreme)", 0, XTYPE_XBOX },
-    { 0x0f0d, 0x000a, XBOX360USB, false}, // "Hori Co. DOA4 FightStick", 0, XTYPE_XBOX360 },
-    { 0x0f0d, 0x000c, XBOX360USB, false}, // "Hori PadEX Turbo", 0, XTYPE_XBOX360 },
-    { 0x0f0d, 0x000d, XBOX360USB, false}, // "Hori Fighting Stick EX2", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x0f0d, 0x0016, XBOX360USB, false}, // "Hori Real Arcade Pro.EX", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x0f0d, 0x001b, XBOX360USB, false}, // "Hori Real Arcade Pro VX", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x0f0d, 0x0063, XBOXONE, false}, // "Hori Real Arcade Pro Hayabusa (USA) Xbox One", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOXONE },
-    { 0x0f0d, 0x0067, XBOXONE, false}, // "HORIPAD ONE", 0, XTYPE_XBOXONE },
-    { 0x0f0d, 0x0078, XBOXONE, false}, // "Hori Real Arcade Pro V Kai Xbox One", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOXONE },
-    { 0x0f0d, 0x00c5, XBOXONE, false}, // "Hori Fighting Commander ONE", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOXONE },
-    { 0x0f0d, 0x00dc, XBOX360USB, false}, // "HORIPAD FPS for Nintendo Switch", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x0f0d, 0x0151, XBOXONE, false}, // "Hori Racing Wheel Overdrive for Xbox Series X", 0, XTYPE_XBOXONE },
-    { 0x0f0d, 0x0152, XBOXONE, false}, // "Hori Racing Wheel Overdrive for Xbox Series X", 0, XTYPE_XBOXONE },
-    { 0x0f0d, 0x01b2, XBOXONE, false}, // "HORI Taiko No Tatsujin Drum Controller", MAP_SHARE_BUTTON, XTYPE_XBOXONE },
-    // { 0x0f30, 0x010b, XBOX, false}, // "Philips Recoil", 0, XTYPE_XBOX },
-    // { 0x0f30, 0x0202, XBOX, false}, // "Joytech Advanced Controller", 0, XTYPE_XBOX },
-    // { 0x0f30, 0x8888, XBOX, false}, // "BigBen XBMiniPad Controller", 0, XTYPE_XBOX },
-    // { 0x102c, 0xff0c, XBOX, false}, // "Joytech Wireless Advanced Controller", 0, XTYPE_XBOX },
-    { 0x1038, 0x1430, XBOX360USB, false}, // "SteelSeries Stratus Duo", 0, XTYPE_XBOX360 },
-    { 0x1038, 0x1431, XBOX360USB, false}, // "SteelSeries Stratus Duo", 0, XTYPE_XBOX360 },
-    { 0x10f5, 0x7005, XBOXONE, false}, // "Turtle Beach Recon Controller", 0, XTYPE_XBOXONE },
-    { 0x10f5, 0x7008, XBOXONE, false}, // "Turtle Beach Recon Controller", MAP_SHARE_BUTTON, XTYPE_XBOXONE },
-    { 0x10f5, 0x7073, XBOXONE, false}, // "Turtle Beach Stealth Ultra Controller", MAP_SHARE_BUTTON, XTYPE_XBOXONE },
-    { 0x11c9, 0x55f0, XBOX360USB, false}, // "Nacon GC-100XF", 0, XTYPE_XBOX360 },
-    { 0x11ff, 0x0511, XBOX360USB, false}, // "PXN V900", 0, XTYPE_XBOX360 },
-    { 0x1209, 0x2882, XBOX360USB, false}, // "Ardwiino Controller", 0, XTYPE_XBOX360 },
-    { 0x12ab, 0x0004, XBOX360USB, false}, // "Honey Bee Xbox360 dancepad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x12ab, 0x0301, XBOX360USB, false}, // "PDP AFTERGLOW AX.1", 0, XTYPE_XBOX360 },
-    { 0x12ab, 0x0303, XBOX360USB, false}, // "Mortal Kombat Klassic FightStick", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    // { 0x12ab, 0x8809, XBOX, false}, // "Xbox DDR dancepad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
-    { 0x1430, 0x4748, XBOX360USB, false}, // "RedOctane Guitar Hero X-plorer", 0, XTYPE_XBOX360 },
-    // { 0x1430, 0x8888, XBOX, false}, // "TX6500+ Dance Pad (first generation)", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
-    { 0x1430, 0xf801, XBOX360USB, false}, // "RedOctane Controller", 0, XTYPE_XBOX360 },
-    { 0x146b, 0x0601, XBOX360USB, false}, // "BigBen Interactive XBOX 360 Controller", 0, XTYPE_XBOX360 },
-    { 0x146b, 0x0604, XBOX360USB, false}, // "Bigben Interactive DAIJA Arcade Stick", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1532, 0x0a00, XBOXONE, false}, // "Razer Atrox Arcade Stick", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOXONE },
-    { 0x1532, 0x0a03, XBOXONE, false}, // "Razer Wildcat", 0, XTYPE_XBOXONE },
-    { 0x1532, 0x0a29, XBOXONE, false}, // "Razer Wolverine V2", 0, XTYPE_XBOXONE },
-    { 0x15e4, 0x3f00, XBOX360USB, false}, // "Power A Mini Pro Elite", 0, XTYPE_XBOX360 },
-    { 0x15e4, 0x3f0a, XBOX360USB, false}, // "Xbox Airflo wired controller", 0, XTYPE_XBOX360 },
-    { 0x15e4, 0x3f10, XBOX360USB, false}, // "Batarang Xbox 360 controller", 0, XTYPE_XBOX360 },
-    { 0x162e, 0xbeef, XBOX360USB, false}, // "Joytech Neo-Se Take2", 0, XTYPE_XBOX360 },
-    { 0x1689, 0xfd00, XBOX360USB, false}, // "Razer Onza Tournament Edition", 0, XTYPE_XBOX360 },
-    { 0x1689, 0xfd01, XBOX360USB, false}, // "Razer Onza Classic Edition", 0, XTYPE_XBOX360 },
-    { 0x1689, 0xfe00, XBOX360USB, false}, // "Razer Sabertooth", 0, XTYPE_XBOX360 },
-    { 0x17ef, 0x6182, XBOX360USB, false}, // "Lenovo Legion Controller for Windows", 0, XTYPE_XBOX360 },
-    { 0x1949, 0x041a, XBOX360USB, false}, // "Amazon Game Controller", 0, XTYPE_XBOX360 },
-    { 0x1a86, 0xe310, XBOX360USB, false}, // "Legion Go S", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0x0002, XBOX360USB, false}, // "Harmonix Rock Band Guitar", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0x0003, XBOX360USB, false}, // "Harmonix Rock Band Drumkit", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0x0130, XBOX360USB, false}, // "Ion Drum Rocker", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf016, XBOX360USB, false}, // "Mad Catz Xbox 360 Controller", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf018, XBOX360USB, false}, // "Mad Catz Street Fighter IV SE Fighting Stick", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf019, XBOX360USB, false}, // "Mad Catz Brawlstick for Xbox 360", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf021, XBOX360USB, false}, // "Mad Cats Ghost Recon FS GamePad", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf023, XBOX360USB, false}, // "MLG Pro Circuit Controller (Xbox)", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf025, XBOX360USB, false}, // "Mad Catz Call Of Duty", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf027, XBOX360USB, false}, // "Mad Catz FPS Pro", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf028, XBOX360USB, false}, // "Street Fighter IV FightPad", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf02e, XBOX360USB, false}, // "Mad Catz Fightpad", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf030, XBOX360USB, false}, // "Mad Catz Xbox 360 MC2 MicroCon Racing Wheel", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf036, XBOX360USB, false}, // "Mad Catz MicroCon GamePad Pro", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf038, XBOX360USB, false}, // "Street Fighter IV FightStick TE", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf039, XBOX360USB, false}, // "Mad Catz MvC2 TE", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf03a, XBOX360USB, false}, // "Mad Catz SFxT Fightstick Pro", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf03d, XBOX360USB, false}, // "Street Fighter IV Arcade Stick TE - Chun Li", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf03e, XBOX360USB, false}, // "Mad Catz MLG FightStick TE", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf03f, XBOX360USB, false}, // "Mad Catz FightStick SoulCaliber", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf042, XBOX360USB, false}, // "Mad Catz FightStick TES+", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf080, XBOX360USB, false}, // "Mad Catz FightStick TE2", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf501, XBOX360USB, false}, // "HoriPad EX2 Turbo", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf502, XBOX360USB, false}, // "Hori Real Arcade Pro.VX SA", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf503, XBOX360USB, false}, // "Hori Fighting Stick VX", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf504, XBOX360USB, false}, // "Hori Real Arcade Pro. EX", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf505, XBOX360USB, false}, // "Hori Fighting Stick EX2B", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xf506, XBOX360USB, false}, // "Hori Real Arcade Pro.EX Premium VLX", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf900, XBOX360USB, false}, // "Harmonix Xbox 360 Controller", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf901, XBOX360USB, false}, // "Gamestop Xbox 360 Controller", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf903, XBOX360USB, false}, // "Tron Xbox 360 controller", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf904, XBOX360USB, false}, // "PDP Versus Fighting Pad", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xf906, XBOX360USB, false}, // "MortalKombat FightStick", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x1bad, 0xfa01, XBOX360USB, false}, // "MadCatz GamePad", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xfd00, XBOX360USB, false}, // "Razer Onza TE", 0, XTYPE_XBOX360 },
-    { 0x1bad, 0xfd01, XBOX360USB, false}, // "Razer Onza", 0, XTYPE_XBOX360 },
-    { 0x1ee9, 0x1590, XBOX360USB, false}, // "ZOTAC Gaming Zone", 0, XTYPE_XBOX360 },
-    { 0x20d6, 0x2001, XBOXONE, false}, // "BDA Xbox Series X Wired Controller", 0, XTYPE_XBOXONE },
-    { 0x20d6, 0x2009, XBOXONE, false}, // "PowerA Enhanced Wired Controller for Xbox Series X|S", 0, XTYPE_XBOXONE },
-    { 0x20d6, 0x2064, XBOXONE, false}, // "PowerA Wired Controller for Xbox", MAP_SHARE_BUTTON, XTYPE_XBOXONE },
-    { 0x20d6, 0x281f, XBOX360USB, false}, // "PowerA Wired Controller For Xbox 360", 0, XTYPE_XBOX360 },
-    { 0x20d6, 0x400b, XBOXONE, false}, // "PowerA FUSION Pro 4 Wired Controller", MAP_SHARE_BUTTON, XTYPE_XBOXONE },
-    { 0x20d6, 0x890b, XBOXONE, false}, // "PowerA MOGA XP-Ultra Controller", MAP_SHARE_BUTTON, XTYPE_XBOXONE },
-    { 0x2345, 0xe00b, XBOX360USB, false}, // "Machenike G5 Pro Controller", 0, XTYPE_XBOX360 },
-    { 0x24c6, 0x5000, XBOX360USB, false}, // "Razer Atrox Arcade Stick", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x24c6, 0x5300, XBOX360USB, false}, // "PowerA MINI PROEX Controller", 0, XTYPE_XBOX360 },
-    { 0x24c6, 0x5303, XBOX360USB, false}, // "Xbox Airflo wired controller", 0, XTYPE_XBOX360 },
-    { 0x24c6, 0x530a, XBOX360USB, false}, // "Xbox 360 Pro EX Controller", 0, XTYPE_XBOX360 },
-    { 0x24c6, 0x531a, XBOX360USB, false}, // "PowerA Pro Ex", 0, XTYPE_XBOX360 },
-    { 0x24c6, 0x5397, XBOX360USB, false}, // "FUS1ON Tournament Controller", 0, XTYPE_XBOX360 },
-    { 0x24c6, 0x541a, XBOXONE, false}, // "PowerA Xbox One Mini Wired Controller", 0, XTYPE_XBOXONE },
-    { 0x24c6, 0x542a, XBOXONE, false}, // "Xbox ONE spectra", 0, XTYPE_XBOXONE },
-    { 0x24c6, 0x543a, XBOXONE, false}, // "PowerA Xbox One wired controller", 0, XTYPE_XBOXONE },
-    { 0x24c6, 0x5500, XBOX360USB, false}, // "Hori XBOX 360 EX 2 with Turbo", 0, XTYPE_XBOX360 },
-    { 0x24c6, 0x5501, XBOX360USB, false}, // "Hori Real Arcade Pro VX-SA", 0, XTYPE_XBOX360 },
-    { 0x24c6, 0x5502, XBOX360USB, false}, // "Hori Fighting Stick VX Alt", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x24c6, 0x5503, XBOX360USB, false}, // "Hori Fighting Edge", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x24c6, 0x5506, XBOX360USB, false}, // "Hori SOULCALIBUR V Stick", 0, XTYPE_XBOX360 },
-    { 0x24c6, 0x550d, XBOX360USB, false}, // "Hori GEM Xbox controller", 0, XTYPE_XBOX360 },
-    { 0x24c6, 0x550e, XBOX360USB, false}, // "Hori Real Arcade Pro V Kai 360", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x24c6, 0x5510, XBOX360USB, false}, // "Hori Fighting Commander ONE (Xbox 360/PC Mode)", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-    { 0x24c6, 0x551a, XBOXONE, false}, // "PowerA FUSION Pro Controller", 0, XTYPE_XBOXONE },
-    { 0x24c6, 0x561a, XBOXONE, false}, // "PowerA FUSION Controller", 0, XTYPE_XBOXONE },
-    { 0x24c6, 0x581a, XBOXONE, false}, // "ThrustMaster XB1 Classic Controller", 0, XTYPE_XBOXONE },
-    { 0x24c6, 0x5b00, XBOX360USB, false}, // "ThrustMaster Ferrari 458 Racing Wheel", 0, XTYPE_XBOX360 },
-    { 0x24c6, 0x5b02, XBOX360USB, false}, // "Thrustmaster, Inc. GPX Controller", 0, XTYPE_XBOX360 },
-    { 0x24c6, 0x5b03, XBOX360USB, false}, // "Thrustmaster Ferrari 458 Racing Wheel", 0, XTYPE_XBOX360 },
-    { 0x24c6, 0x5d04, XBOX360USB, false}, // "Razer Sabertooth", 0, XTYPE_XBOX360 },
-    { 0x24c6, 0xfafe, XBOX360USB, false}, // "Rock Candy Gamepad for Xbox 360", 0, XTYPE_XBOX360 },
-    { 0x2563, 0x058d, XBOX360USB, false}, // "OneXPlayer Gamepad", 0, XTYPE_XBOX360 },
-    { 0x294b, 0x3303, XBOXONE, false}, // "Snakebyte GAMEPAD BASE X", 0, XTYPE_XBOXONE },
-    { 0x294b, 0x3404, XBOXONE, false}, // "Snakebyte GAMEPAD RGB X", 0, XTYPE_XBOXONE },
-    { 0x2993, 0x2001, XBOX360USB, false}, // "TECNO Pocket Go", 0, XTYPE_XBOX360 },
-    { 0x2dc8, 0x2000, XBOXONE, false}, // "8BitDo Pro 2 Wired Controller fox Xbox", 0, XTYPE_XBOXONE },
-    { 0x2dc8, 0x200f, XBOXONE, false}, // "8BitDo Ultimate 3-mode Controller for Xbox", MAP_SHARE_BUTTON, XTYPE_XBOXONE },
-    { 0x2dc8, 0x3106, XBOX360USB, false}, // "8BitDo Ultimate Wireless / Pro 2 Wired Controller", 0, XTYPE_XBOX360 },
-    { 0x2dc8, 0x3109, XBOX360USB, false}, // "8BitDo Ultimate Wireless Bluetooth", 0, XTYPE_XBOX360 },
-    { 0x2dc8, 0x310a, XBOX360USB, false}, // "8BitDo Ultimate 2C Wireless Controller", 0, XTYPE_XBOX360 },
-    { 0x2dc8, 0x310b, XBOX360USB, false}, // "8BitDo Ultimate 2 Wireless Controller", 0, XTYPE_XBOX360 },
-    { 0x2dc8, 0x6001, XBOX360USB, false}, // "8BitDo SN30 Pro", 0, XTYPE_XBOX360 },
-    { 0x2e24, 0x0423, XBOXONE, false}, // "Hyperkin DuchesS Xbox One pad", MAP_SHARE_BUTTON, XTYPE_XBOXONE },
-    { 0x2e24, 0x0652, XBOXONE, false}, // "Hyperkin Duke X-Box One pad", 0, XTYPE_XBOXONE },
-    { 0x2e24, 0x1688, XBOXONE, false}, // "Hyperkin X91 X-Box One pad", 0, XTYPE_XBOXONE },
-    { 0x2e95, 0x0504, XBOXONE, false}, // "SCUF Gaming Controller", MAP_SHARE_BUTTON, XTYPE_XBOXONE },
-    { 0x31e3, 0x1100, XBOX360USB, false}, // "Wooting One", 0, XTYPE_XBOX360 },
-    { 0x31e3, 0x1200, XBOX360USB, false}, // "Wooting Two", 0, XTYPE_XBOX360 },
-    { 0x31e3, 0x1210, XBOX360USB, false}, // "Wooting Lekker", 0, XTYPE_XBOX360 },
-    { 0x31e3, 0x1220, XBOX360USB, false}, // "Wooting Two HE", 0, XTYPE_XBOX360 },
-    { 0x31e3, 0x1230, XBOX360USB, false}, // "Wooting Two HE (ARM)", 0, XTYPE_XBOX360 },
-    { 0x31e3, 0x1300, XBOX360USB, false}, // "Wooting 60HE (AVR)", 0, XTYPE_XBOX360 },
-    { 0x31e3, 0x1310, XBOX360USB, false}, // "Wooting 60HE (ARM)", 0, XTYPE_XBOX360 },
-    { 0x3285, 0x0603, XBOXONE, false}, // "Nacon Pro Compact controller for Xbox", 0, XTYPE_XBOXONE },
-    { 0x3285, 0x0607, XBOX360USB, false}, // "Nacon GC-100", 0, XTYPE_XBOX360 },
-    { 0x3285, 0x0614, XBOXONE, false}, // "Nacon Pro Compact", 0, XTYPE_XBOXONE },
-    { 0x3285, 0x0646, XBOXONE, false}, // "Nacon Pro Compact", 0, XTYPE_XBOXONE },
-    { 0x3285, 0x0662, XBOX360USB, false}, // "Nacon Revolution5 Pro", 0, XTYPE_XBOX360 },
-    { 0x3285, 0x0663, XBOXONE, false}, // "Nacon Evol-X", 0, XTYPE_XBOXONE },
-    { 0x3537, 0x1004, XBOX360USB, false}, // "GameSir T4 Kaleid", 0, XTYPE_XBOX360 },
-    { 0x3537, 0x1010, XBOXONE, false}, // "GameSir G7 SE", 0, XTYPE_XBOXONE },
-    { 0x366c, 0x0005, XBOXONE, false}, // "ByoWave Proteus Controller", MAP_SHARE_BUTTON, XTYPE_XBOXONE, FLAG_DELAY_INIT },
-    // { 0x3767, 0x0101, XBOX, false}, // "Fanatec Speedster 3 Forceshock Wheel", 0, XTYPE_XBOX },
-    { 0x413d, 0x2104, XBOX360USB, false}, // "Black Shark Green Ghost Gamepad", 0, XTYPE_XBOX360 },
-    // { 0xffff, 0xffff, XBOX, false}, // "Chinese-made Xbox Controller", 0, XTYPE_XBOX },
-    // { 0x0000, 0x0000, UNKNOWN, false}, // "Generic X-Box pad", 0, XTYPE_UNKNOWN }
+    {0x0079, 0x18d4, XBOX360USB, false},  // "GPD Win 2 X-Box Controller",                                0,                                    XTYPE_XBOX360
+    {0x03eb, 0xff01, XBOX360USB, false},  // "Wooting One (Legacy)",                                      0,                                    XTYPE_XBOX360
+    {0x03eb, 0xff02, XBOX360USB, false},  // "Wooting Two (Legacy)",                                      0,                                    XTYPE_XBOX360
+    {0x03f0, 0x038d, XBOX360USB, false},  // "HyperX Clutch (wired)",                                     0,                                    XTYPE_XBOX360
+    {0x03f0, 0x048d, XBOX360W, false},    // "HyperX Clutch (wireless)",                                  0,                                    XTYPE_XBOX360
+    {0x03f0, 0x0495, XBOXONE, false},     // "HyperX Clutch Gladiate",                                    0,                                    XTYPE_XBOXONE
+    {0x03f0, 0x07a0, XBOXONE, false},     // "HyperX Clutch Gladiate RGB",                                0,                                    XTYPE_XBOXONE
+    {0x03f0, 0x08b6, XBOXONE, false},     // "HyperX Clutch Gladiate (v2)",                               MAP_SHARE_BUTTON,                     XTYPE_XBOXONE
+    {0x03f0, 0x09b4, XBOXONE, false},     // "HyperX Clutch Tanto",                                       0,                                    XTYPE_XBOXONE
+    // {0x044f, 0x0f00, XBOX, false},     // "Thrustmaster Wheel",                                        0,                                    XTYPE_XBOX
+    // {0x044f, 0x0f03, XBOX, false},     // "Thrustmaster Wheel",                                        0,                                    XTYPE_XBOX
+    // {0x044f, 0x0f07, XBOX, false},     // "Thrustmaster, Inc. Controller",                             0,                                    XTYPE_XBOX
+    // {0x044f, 0x0f10, XBOX, false},     // "Thrustmaster Modena GT Wheel",                              0,                                    XTYPE_XBOX
+    {0x044f, 0xb326, XBOX360USB, false},  // "Thrustmaster Gamepad GP XID",                               0,                                    XTYPE_XBOX360
+    {0x044f, 0xd01e, XBOXONE, false},     // "ThrustMaster, Inc. ESWAP X 2 ELDEN RING EDITION",           0,                                    XTYPE_XBOXONE
+    // {0x045e, 0x0202, XBOX, false},     // "Microsoft X-Box pad v1 (US)",                               0,                                    XTYPE_XBOX
+    // {0x045e, 0x0285, XBOX, false},     // "Microsoft X-Box pad (Japan)",                               0,                                    XTYPE_XBOX
+    // {0x045e, 0x0287, XBOX, false},     // "Microsoft Xbox Controller S",                               0,                                    XTYPE_XBOX
+    // {0x045e, 0x0288, XBOX, false},     // "Microsoft Xbox Controller S v2",                            0,                                    XTYPE_XBOX
+    // {0x045e, 0x0289, XBOX, false},     // "Microsoft X-Box pad v2 (US)",                               0,                                    XTYPE_XBOX
+    {0x045e, 0x028e, XBOX360USB, false},  // "Microsoft X-Box 360 pad",                                   0,                                    XTYPE_XBOX360
+    {0x045e, 0x028f, XBOX360USB, false},  // "Microsoft X-Box 360 pad v2",                                0,                                    XTYPE_XBOX360
+    {0x045e, 0x0291, XBOX360W, false},    // "Xbox 360 Wireless Receiver (XBOX)",                         MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX360W
+    {0x045e, 0x02a9, XBOX360W, false},    // "Xbox 360 Wireless Receiver (Unofficial)",                   MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX360W
+    {0x045e, 0x02d1, XBOXONE, false},     // "Microsoft X-Box One pad",                                   0,                                    XTYPE_XBOXONE
+    {0x045e, 0x02dd, XBOXONE, false},     // "Microsoft X-Box One pad (Firmware 2015)",                   0,                                    XTYPE_XBOXONE
+    {0x045e, 0x02e3, XBOXONE, false},     // "Microsoft X-Box One Elite pad",                             MAP_PADDLES,                          XTYPE_XBOXONE
+    {0x045e, 0x02ea, XBOXONE, false},     // "Microsoft X-Box One S pad",                                 0,                                    XTYPE_XBOXONE
+    {0x045e, 0x0719, XBOX360W, false},    // "Xbox 360 Wireless Receiver",                                MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX360W
+    {0x045e, 0x0b00, XBOXONE, false},     // "Microsoft X-Box One Elite 2 pad",                           MAP_PADDLES,                          XTYPE_XBOXONE
+    {0x045e, 0x0b0a, XBOXONE, false},     // "Microsoft X-Box Adaptive Controller",                       MAP_PROFILE_BUTTON,                   XTYPE_XBOXONE
+    {0x045e, 0x0b12, XBOXONE, false},     // "Microsoft Xbox Series S|X Controller",                      MAP_SHARE_BUTTON | MAP_SHARE_OFFSET,  XTYPE_XBOXONE
+    {0x046d, 0xc21d, XBOX360USB, false},  // "Logitech Gamepad F310",                                     0,                                    XTYPE_XBOX360
+    {0x046d, 0xc21e, XBOX360USB, false},  // "Logitech Gamepad F510",                                     0,                                    XTYPE_XBOX360
+    {0x046d, 0xc21f, XBOX360USB, false},  // "Logitech Gamepad F710",                                     0,                                    XTYPE_XBOX360
+    {0x046d, 0xc242, XBOX360USB, false},  // "Logitech Chillstream Controller",                           0,                                    XTYPE_XBOX360
+    // {0x046d, 0xca84, XBOX, false},     // "Logitech Xbox Cordless Controller",                         0,                                    XTYPE_XBOX
+    // {0x046d, 0xca88, XBOX, false},     // "Logitech Compact Controller for Xbox",                      0,                                    XTYPE_XBOX
+    // {0x046d, 0xca8a, XBOX, false},     // "Logitech Precision Vibration Feedback Wheel",               0,                                    XTYPE_XBOX
+    {0x046d, 0xcaa3, XBOX360USB, false},  // "Logitech DriveFx Racing Wheel",                             0,                                    XTYPE_XBOX360
+    {0x056e, 0x2004, XBOX360USB, false},  // "Elecom JC-U3613M",                                          0,                                    XTYPE_XBOX360
+    // {0x05fd, 0x1007, XBOX, false},     // "Mad Catz Controller (unverified)",                          0,                                    XTYPE_XBOX
+    // {0x05fd, 0x107a, XBOX, false},     // "InterAct 'PowerPad Pro' X-Box pad (Germany)",               0,                                    XTYPE_XBOX
+    // {0x05fe, 0x3030, XBOX, false},     // "Chic Controller",                                           0,                                    XTYPE_XBOX
+    // {0x05fe, 0x3031, XBOX, false},     // "Chic Controller",                                           0,                                    XTYPE_XBOX
+    // {0x062a, 0x0020, XBOX, false},     // "Logic3 Xbox GamePad",                                       0,                                    XTYPE_XBOX
+    // {0x062a, 0x0033, XBOX, false},     // "Competition Pro Steering Wheel",                            0,                                    XTYPE_XBOX
+    // {0x06a3, 0x0200, XBOX, false},     // "Saitek Racing Wheel",                                       0,                                    XTYPE_XBOX
+    // {0x06a3, 0x0201, XBOX, false},     // "Saitek Adrenalin",                                          0,                                    XTYPE_XBOX
+    {0x06a3, 0xf51a, XBOX360USB, false},  // "Saitek P3600",                                              0,                                    XTYPE_XBOX360
+    {0x0738, 0x4503, XBOXONE, false},     // "Mad Catz Racing Wheel",                                     0,                                    XTYPE_XBOXONE
+    // {0x0738, 0x4506, XBOX, false},     // "Mad Catz 4506 Wireless Controller",                         0,                                    XTYPE_XBOX
+    // {0x0738, 0x4516, XBOX, false},     // "Mad Catz Control Pad",                                      0,                                    XTYPE_XBOX
+    // {0x0738, 0x4520, XBOX, false},     // "Mad Catz Control Pad Pro",                                  0,                                    XTYPE_XBOX
+    // {0x0738, 0x4522, XBOX, false},     // "Mad Catz LumiCON",                                          0,                                    XTYPE_XBOX
+    // {0x0738, 0x4526, XBOX, false},     // "Mad Catz Control Pad Pro",                                  0,                                    XTYPE_XBOX
+    // {0x0738, 0x4530, XBOX, false},     // "Mad Catz Universal MC2 Racing Wheel and Pedals",            0,                                    XTYPE_XBOX
+    // {0x0738, 0x4536, XBOX, false},     // "Mad Catz MicroCON",                                         0,                                    XTYPE_XBOX
+    // {0x0738, 0x4540, XBOX, false},     // "Mad Catz Beat Pad",                                         MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
+    // {0x0738, 0x4556, XBOX, false},     // "Mad Catz Lynx Wireless Controller",                         0,                                    XTYPE_XBOX
+    // {0x0738, 0x4586, XBOX, false},     // "Mad Catz MicroCon Wireless Controller",                     0,                                    XTYPE_XBOX
+    // {0x0738, 0x4588, XBOX, false},     // "Mad Catz Blaster",                                          0,                                    XTYPE_XBOX
+    // {0x0738, 0x45ff, XBOX, false},     // "Mad Catz Beat Pad (w/ Handle)",                             MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
+    {0x0738, 0x4716, XBOX360USB, false},  // "Mad Catz Wired Xbox 360 Controller",                        0,                                    XTYPE_XBOX360
+    {0x0738, 0x4718, XBOX360USB, false},  // "Mad Catz Street Fighter IV FightStick SE",                  0,                                    XTYPE_XBOX360
+    {0x0738, 0x4726, XBOX360USB, false},  // "Mad Catz Xbox 360 Controller",                              0,                                    XTYPE_XBOX360
+    {0x0738, 0x4728, XBOX360USB, false},  // "Mad Catz Street Fighter IV FightPad",                       MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x0738, 0x4736, XBOX360USB, false},  // "Mad Catz MicroCon Gamepad",                                 0,                                    XTYPE_XBOX360
+    {0x0738, 0x4738, XBOX360USB, false},  // "Mad Catz Wired Xbox 360 Controller (SFIV)",                 MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x0738, 0x4740, XBOX360USB, false},  // "Mad Catz Beat Pad",                                         0,                                    XTYPE_XBOX360
+    // {0x0738, 0x4743, XBOX, false},     // "Mad Catz Beat Pad Pro",                                     MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
+    {0x0738, 0x4758, XBOX360USB, false},  // "Mad Catz Arcade Game Stick",                                MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x0738, 0x4a01, XBOXONE, false},     // "Mad Catz FightStick TE 2",                                  MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOXONE
+    // {0x0738, 0x6040, XBOX, false},     // "Mad Catz Beat Pad Pro",                                     MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
+    {0x0738, 0x9871, XBOX360USB, false},  // "Mad Catz Portable Drum",                                    0,                                    XTYPE_XBOX360
+    {0x0738, 0xb726, XBOX360USB, false},  // "Mad Catz Xbox controller - MW2",                            0,                                    XTYPE_XBOX360
+    {0x0738, 0xb738, XBOX360USB, false},  // "Mad Catz MVC2TE Stick 2",                                   MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x0738, 0xbeef, XBOX360USB, false},  // "Mad Catz JOYTECH NEO SE Advanced GamePad",                  0,                                    XTYPE_XBOX360
+    {0x0738, 0xcb02, XBOX360USB, false},  // "Saitek Cyborg Rumble Pad - PC/Xbox 360",                    0,                                    XTYPE_XBOX360
+    {0x0738, 0xcb03, XBOX360USB, false},  // "Saitek P3200 Rumble Pad - PC/Xbox 360",                     0,                                    XTYPE_XBOX360
+    {0x0738, 0xcb29, XBOX360USB, false},  // "Saitek Aviator Stick AV8R02",                               0,                                    XTYPE_XBOX360
+    {0x0738, 0xf738, XBOX360USB, false},  // "Super SFIV FightStick TE S",                                0,                                    XTYPE_XBOX360
+    {0x07ff, 0xffff, XBOX360USB, false},  // "Mad Catz GamePad",                                          0,                                    XTYPE_XBOX360
+    {0x0b05, 0x1a38, XBOXONE, false},     // "ASUS ROG RAIKIRI",                                          MAP_SHARE_BUTTON,                     XTYPE_XBOXONE
+    {0x0b05, 0x1abb, XBOXONE, false},     // "ASUS ROG RAIKIRI PRO",                                      0,                                    XTYPE_XBOXONE
+    // {0x0c12, 0x0005, XBOX, false},     // "Intec wireless",                                            0,                                    XTYPE_XBOX
+    // {0x0c12, 0x8801, XBOX, false},     // "Nyko Xbox Controller",                                      0,                                    XTYPE_XBOX
+    // {0x0c12, 0x8802, XBOX, false},     // "Zeroplus Xbox Controller",                                  0,                                    XTYPE_XBOX
+    // {0x0c12, 0x8809, XBOX, false},     // "RedOctane Xbox Dance Pad",                                  DANCEPAD_MAP_CONFIG,                  XTYPE_XBOX
+    // {0x0c12, 0x880a, XBOX, false},     // "Pelican Eclipse PL-2023",                                   0,                                    XTYPE_XBOX
+    // {0x0c12, 0x8810, XBOX, false},     // "Zeroplus Xbox Controller",                                  0,                                    XTYPE_XBOX
+    // {0x0c12, 0x9902, XBOX, false},     // "HAMA VibraX - *FAULTY HARDWARE*",                           0,                                    XTYPE_XBOX
+    // {0x0d2f, 0x0002, XBOX, false},     // "Andamiro Pump It Up pad",                                   MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
+    {0x0db0, 0x1901, XBOX360USB, false},  // "Micro Star International Xbox360 Controller for Windows",   0,                                    XTYPE_XBOX360
+    // {0x0e4c, 0x1097, XBOX, false},     // "Radica Gamester Controller",                                0,                                    XTYPE_XBOX
+    // {0x0e4c, 0x1103, XBOX, false},     // "Radica Gamester Reflex",                                    MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX
+    // {0x0e4c, 0x2390, XBOX, false},     // "Radica Games Jtech Controller",                             0,                                    XTYPE_XBOX
+    // {0x0e4c, 0x3510, XBOX, false},     // "Radica Gamester",                                           0,                                    XTYPE_XBOX
+    // {0x0e6f, 0x0003, XBOX, false},     // "Logic3 Freebird wireless Controller",                       0,                                    XTYPE_XBOX
+    // {0x0e6f, 0x0005, XBOX, false},     // "Eclipse wireless Controller",                               0,                                    XTYPE_XBOX
+    // {0x0e6f, 0x0006, XBOX, false},     // "Edge wireless Controller",                                  0,                                    XTYPE_XBOX
+    // {0x0e6f, 0x0008, XBOX, false},     // "After Glow Pro Controller",                                 0,                                    XTYPE_XBOX
+    {0x0e6f, 0x0105, XBOX360USB, false},  // "HSM3 Xbox360 dancepad",                                     MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX360
+    {0x0e6f, 0x0113, XBOX360USB, false},  // "Afterglow AX.1 Gamepad for Xbox 360",                       0,                                    XTYPE_XBOX360
+    {0x0e6f, 0x011f, XBOX360USB, false},  // "Rock Candy Gamepad Wired Controller",                       0,                                    XTYPE_XBOX360
+    {0x0e6f, 0x0131, XBOX360USB, false},  // "PDP EA Sports Controller",                                  0,                                    XTYPE_XBOX360
+    {0x0e6f, 0x0133, XBOX360USB, false},  // "Xbox 360 Wired Controller",                                 0,                                    XTYPE_XBOX360
+    {0x0e6f, 0x0139, XBOXONE, false},     // "Afterglow Prismatic Wired Controller",                      0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x013a, XBOXONE, false},     // "PDP Xbox One Controller",                                   0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x0146, XBOXONE, false},     // "Rock Candy Wired Controller for Xbox One",                  0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x0147, XBOXONE, false},     // "PDP Marvel Xbox One Controller",                            0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x015c, XBOXONE, false},     // "PDP Xbox One Arcade Stick",                                 MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOXONE
+    {0x0e6f, 0x015d, XBOXONE, false},     // "PDP Mirror's Edge Official Wired Controller for Xbox One",  0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x0161, XBOXONE, false},     // "PDP Xbox One Controller",                                   0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x0162, XBOXONE, false},     // "PDP Xbox One Controller",                                   0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x0163, XBOXONE, false},     // "PDP Xbox One Controller",                                   0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x0164, XBOXONE, false},     // "PDP Battlefield One",                                       0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x0165, XBOXONE, false},     // "PDP Titanfall 2",                                           0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x0201, XBOX360USB, false},  // "Pelican PL-3601 'TSZ' Wired Xbox 360 Controller",           0,                                    XTYPE_XBOX360
+    {0x0e6f, 0x0213, XBOX360USB, false},  // "Afterglow Gamepad for Xbox 360",                            0,                                    XTYPE_XBOX360
+    {0x0e6f, 0x021f, XBOX360USB, false},  // "Rock Candy Gamepad for Xbox 360",                           0,                                    XTYPE_XBOX360
+    {0x0e6f, 0x0246, XBOXONE, false},     // "Rock Candy Gamepad for Xbox One 2015",                      0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x02a0, XBOXONE, false},     // "PDP Xbox One Controller",                                   0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x02a1, XBOXONE, false},     // "PDP Xbox One Controller",                                   0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x02a2, XBOXONE, false},     // "PDP Wired Controller for Xbox One - Crimson Red",           0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x02a4, XBOXONE, false},     // "PDP Wired Controller for Xbox One - Stealth Series",        0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x02a6, XBOXONE, false},     // "PDP Wired Controller for Xbox One - Camo Series",           0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x02a7, XBOXONE, false},     // "PDP Xbox One Controller",                                   0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x02a8, XBOXONE, false},     // "PDP Xbox One Controller",                                   0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x02ab, XBOXONE, false},     // "PDP Controller for Xbox One",                               0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x02ad, XBOXONE, false},     // "PDP Wired Controller for Xbox One - Stealth Series",        0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x02b3, XBOXONE, false},     // "Afterglow Prismatic Wired Controller",                      0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x02b8, XBOXONE, false},     // "Afterglow Prismatic Wired Controller",                      0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x0301, XBOX360USB, false},  // "Logic3 Controller",                                         0,                                    XTYPE_XBOX360
+    {0x0e6f, 0x0346, XBOXONE, false},     // "Rock Candy Gamepad for Xbox One 2016",                      0,                                    XTYPE_XBOXONE
+    {0x0e6f, 0x0401, XBOX360USB, false},  // "Logic3 Controller",                                         0,                                    XTYPE_XBOX360
+    {0x0e6f, 0x0413, XBOX360USB, false},  // "Afterglow AX.1 Gamepad for Xbox 360",                       0,                                    XTYPE_XBOX360
+    {0x0e6f, 0x0501, XBOX360USB, false},  // "PDP Xbox 360 Controller",                                   0,                                    XTYPE_XBOX360
+    {0x0e6f, 0xf900, XBOX360USB, false},  // "PDP Afterglow AX.1",                                        0,                                    XTYPE_XBOX360
+    // {0x0e8f, 0x0201, XBOX, false},     // "SmartJoy Frag Xpad/PS2 adaptor",                            0,                                    XTYPE_XBOX
+    // {0x0e8f, 0x3008, XBOX, false},     // "Generic xbox control (dealextreme)",                        0,                                    XTYPE_XBOX
+    {0x0f0d, 0x000a, XBOX360USB, false},  // "Hori Co. DOA4 FightStick",                                  0,                                    XTYPE_XBOX360
+    {0x0f0d, 0x000c, XBOX360USB, false},  // "Hori PadEX Turbo",                                          0,                                    XTYPE_XBOX360
+    {0x0f0d, 0x000d, XBOX360USB, false},  // "Hori Fighting Stick EX2",                                   MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x0f0d, 0x0016, XBOX360USB, false},  // "Hori Real Arcade Pro.EX",                                   MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x0f0d, 0x001b, XBOX360USB, false},  // "Hori Real Arcade Pro VX",                                   MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x0f0d, 0x0063, XBOXONE, false},     // "Hori Real Arcade Pro Hayabusa (USA) Xbox One",              MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOXONE
+    {0x0f0d, 0x0067, XBOXONE, false},     // "HORIPAD ONE",                                               0,                                    XTYPE_XBOXONE
+    {0x0f0d, 0x0078, XBOXONE, false},     // "Hori Real Arcade Pro V Kai Xbox One",                       MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOXONE
+    {0x0f0d, 0x00c5, XBOXONE, false},     // "Hori Fighting Commander ONE",                               MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOXONE
+    {0x0f0d, 0x00dc, XBOX360USB, false},  // "HORIPAD FPS for Nintendo Switch",                           MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x0f0d, 0x0151, XBOXONE, false},     // "Hori Racing Wheel Overdrive for Xbox Series X",             0,                                    XTYPE_XBOXONE
+    {0x0f0d, 0x0152, XBOXONE, false},     // "Hori Racing Wheel Overdrive for Xbox Series X",             0,                                    XTYPE_XBOXONE
+    {0x0f0d, 0x01b2, XBOXONE, false},     // "HORI Taiko No Tatsujin Drum Controller",                    MAP_SHARE_BUTTON,                     XTYPE_XBOXONE
+    // {0x0f30, 0x010b, XBOX, false},     // "Philips Recoil",                                            0,                                    XTYPE_XBOX
+    // {0x0f30, 0x0202, XBOX, false},     // "Joytech Advanced Controller",                               0,                                    XTYPE_XBOX
+    // {0x0f30, 0x8888, XBOX, false},     // "BigBen XBMiniPad Controller",                               0,                                    XTYPE_XBOX
+    // {0x102c, 0xff0c, XBOX, false},     // "Joytech Wireless Advanced Controller",                      0,                                    XTYPE_XBOX
+    {0x1038, 0x1430, XBOX360USB, false},  // "SteelSeries Stratus Duo",                                   0,                                    XTYPE_XBOX360
+    {0x1038, 0x1431, XBOX360USB, false},  // "SteelSeries Stratus Duo",                                   0,                                    XTYPE_XBOX360
+    {0x10f5, 0x7005, XBOXONE, false},     // "Turtle Beach Recon Controller",                             0,                                    XTYPE_XBOXONE
+    {0x10f5, 0x7008, XBOXONE, false},     // "Turtle Beach Recon Controller",                             MAP_SHARE_BUTTON,                     XTYPE_XBOXONE
+    {0x10f5, 0x7073, XBOXONE, false},     // "Turtle Beach Stealth Ultra Controller",                     MAP_SHARE_BUTTON,                     XTYPE_XBOXONE
+    {0x11c9, 0x55f0, XBOX360USB, false},  // "Nacon GC-100XF",                                            0,                                    XTYPE_XBOX360
+    {0x11ff, 0x0511, XBOX360USB, false},  // "PXN V900",                                                  0,                                    XTYPE_XBOX360
+    {0x1209, 0x2882, XBOX360USB, false},  // "Ardwiino Controller",                                       0,                                    XTYPE_XBOX360
+    {0x12ab, 0x0004, XBOX360USB, false},  // "Honey Bee Xbox360 dancepad",                                MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX360
+    {0x12ab, 0x0301, XBOX360USB, false},  // "PDP AFTERGLOW AX.1",                                        0,                                    XTYPE_XBOX360
+    {0x12ab, 0x0303, XBOX360USB, false},  // "Mortal Kombat Klassic FightStick",                          MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    // {0x12ab, 0x8809, XBOX, false},     // "Xbox DDR dancepad",                                         MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
+    {0x1430, 0x4748, XBOX360USB, false},  // "RedOctane Guitar Hero X-plorer",                            0,                                    XTYPE_XBOX360
+    // {0x1430, 0x8888, XBOX, false},     // "TX6500+ Dance Pad (first generation)",                      MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
+    {0x1430, 0xf801, XBOX360USB, false},  // "RedOctane Controller",                                      0,                                    XTYPE_XBOX360
+    {0x146b, 0x0601, XBOX360USB, false},  // "BigBen Interactive XBOX 360 Controller",                    0,                                    XTYPE_XBOX360
+    {0x146b, 0x0604, XBOX360USB, false},  // "Bigben Interactive DAIJA Arcade Stick",                     MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1532, 0x0a00, XBOXONE, false},     // "Razer Atrox Arcade Stick",                                  MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOXONE
+    {0x1532, 0x0a03, XBOXONE, false},     // "Razer Wildcat",                                             0,                                    XTYPE_XBOXONE
+    {0x1532, 0x0a29, XBOXONE, false},     // "Razer Wolverine V2",                                        0,                                    XTYPE_XBOXONE
+    {0x15e4, 0x3f00, XBOX360USB, false},  // "Power A Mini Pro Elite",                                    0,                                    XTYPE_XBOX360
+    {0x15e4, 0x3f0a, XBOX360USB, false},  // "Xbox Airflo wired controller",                              0,                                    XTYPE_XBOX360
+    {0x15e4, 0x3f10, XBOX360USB, false},  // "Batarang Xbox 360 controller",                              0,                                    XTYPE_XBOX360
+    {0x162e, 0xbeef, XBOX360USB, false},  // "Joytech Neo-Se Take2",                                      0,                                    XTYPE_XBOX360
+    {0x1689, 0xfd00, XBOX360USB, false},  // "Razer Onza Tournament Edition",                             0,                                    XTYPE_XBOX360
+    {0x1689, 0xfd01, XBOX360USB, false},  // "Razer Onza Classic Edition",                                0,                                    XTYPE_XBOX360
+    {0x1689, 0xfe00, XBOX360USB, false},  // "Razer Sabertooth",                                          0,                                    XTYPE_XBOX360
+    {0x17ef, 0x6182, XBOX360USB, false},  // "Lenovo Legion Controller for Windows",                      0,                                    XTYPE_XBOX360
+    {0x1949, 0x041a, XBOX360USB, false},  // "Amazon Game Controller",                                    0,                                    XTYPE_XBOX360
+    {0x1a86, 0xe310, XBOX360USB, false},  // "Legion Go S",                                               0,                                    XTYPE_XBOX360
+    {0x1bad, 0x0002, XBOX360USB, false},  // "Harmonix Rock Band Guitar",                                 0,                                    XTYPE_XBOX360
+    {0x1bad, 0x0003, XBOX360USB, false},  // "Harmonix Rock Band Drumkit",                                MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX360
+    {0x1bad, 0x0130, XBOX360USB, false},  // "Ion Drum Rocker",                                           MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX360
+    {0x1bad, 0xf016, XBOX360USB, false},  // "Mad Catz Xbox 360 Controller",                              0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf018, XBOX360USB, false},  // "Mad Catz Street Fighter IV SE Fighting Stick",              MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xf019, XBOX360USB, false},  // "Mad Catz Brawlstick for Xbox 360",                          MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xf021, XBOX360USB, false},  // "Mad Cats Ghost Recon FS GamePad",                           0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf023, XBOX360USB, false},  // "MLG Pro Circuit Controller (Xbox)",                         0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf025, XBOX360USB, false},  // "Mad Catz Call Of Duty",                                     0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf027, XBOX360USB, false},  // "Mad Catz FPS Pro",                                          0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf028, XBOX360USB, false},  // "Street Fighter IV FightPad",                                0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf02e, XBOX360USB, false},  // "Mad Catz Fightpad",                                         MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xf030, XBOX360USB, false},  // "Mad Catz Xbox 360 MC2 MicroCon Racing Wheel",               0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf036, XBOX360USB, false},  // "Mad Catz MicroCon GamePad Pro",                             0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf038, XBOX360USB, false},  // "Street Fighter IV FightStick TE",                           0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf039, XBOX360USB, false},  // "Mad Catz MvC2 TE",                                          MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xf03a, XBOX360USB, false},  // "Mad Catz SFxT Fightstick Pro",                              MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xf03d, XBOX360USB, false},  // "Street Fighter IV Arcade Stick TE - Chun Li",               MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xf03e, XBOX360USB, false},  // "Mad Catz MLG FightStick TE",                                MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xf03f, XBOX360USB, false},  // "Mad Catz FightStick SoulCaliber",                           MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xf042, XBOX360USB, false},  // "Mad Catz FightStick TES+",                                  MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xf080, XBOX360USB, false},  // "Mad Catz FightStick TE2",                                   MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xf501, XBOX360USB, false},  // "HoriPad EX2 Turbo",                                         0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf502, XBOX360USB, false},  // "Hori Real Arcade Pro.VX SA",                                MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xf503, XBOX360USB, false},  // "Hori Fighting Stick VX",                                    MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xf504, XBOX360USB, false},  // "Hori Real Arcade Pro. EX",                                  MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xf505, XBOX360USB, false},  // "Hori Fighting Stick EX2B",                                  MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xf506, XBOX360USB, false},  // "Hori Real Arcade Pro.EX Premium VLX",                       0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf900, XBOX360USB, false},  // "Harmonix Xbox 360 Controller",                              0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf901, XBOX360USB, false},  // "Gamestop Xbox 360 Controller",                              0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf903, XBOX360USB, false},  // "Tron Xbox 360 controller",                                  0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf904, XBOX360USB, false},  // "PDP Versus Fighting Pad",                                   0,                                    XTYPE_XBOX360
+    {0x1bad, 0xf906, XBOX360USB, false},  // "MortalKombat FightStick",                                   MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x1bad, 0xfa01, XBOX360USB, false},  // "MadCatz GamePad",                                           0,                                    XTYPE_XBOX360
+    {0x1bad, 0xfd00, XBOX360USB, false},  // "Razer Onza TE",                                             0,                                    XTYPE_XBOX360
+    {0x1bad, 0xfd01, XBOX360USB, false},  // "Razer Onza",                                                0,                                    XTYPE_XBOX360
+    {0x1ee9, 0x1590, XBOX360USB, false},  // "ZOTAC Gaming Zone",                                         0,                                    XTYPE_XBOX360
+    {0x20d6, 0x2001, XBOXONE, false},     // "BDA Xbox Series X Wired Controller",                        0,                                    XTYPE_XBOXONE
+    {0x20d6, 0x2009, XBOXONE, false},     // "PowerA Enhanced Wired Controller for Xbox Series X|S",      0,                                    XTYPE_XBOXONE
+    {0x20d6, 0x2064, XBOXONE, false},     // "PowerA Wired Controller for Xbox",                          MAP_SHARE_BUTTON,                     XTYPE_XBOXONE
+    {0x20d6, 0x281f, XBOX360USB, false},  // "PowerA Wired Controller For Xbox 360",                      0,                                    XTYPE_XBOX360
+    {0x20d6, 0x400b, XBOXONE, false},     // "PowerA FUSION Pro 4 Wired Controller",                      MAP_SHARE_BUTTON,                     XTYPE_XBOXONE
+    {0x20d6, 0x890b, XBOXONE, false},     // "PowerA MOGA XP-Ultra Controller",                           MAP_SHARE_BUTTON,                     XTYPE_XBOXONE
+    {0x2345, 0xe00b, XBOX360USB, false},  // "Machenike G5 Pro Controller",                               0,                                    XTYPE_XBOX360
+    {0x24c6, 0x5000, XBOX360USB, false},  // "Razer Atrox Arcade Stick",                                  MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x24c6, 0x5300, XBOX360USB, false},  // "PowerA MINI PROEX Controller",                              0,                                    XTYPE_XBOX360
+    {0x24c6, 0x5303, XBOX360USB, false},  // "Xbox Airflo wired controller",                              0,                                    XTYPE_XBOX360
+    {0x24c6, 0x530a, XBOX360USB, false},  // "Xbox 360 Pro EX Controller",                                0,                                    XTYPE_XBOX360
+    {0x24c6, 0x531a, XBOX360USB, false},  // "PowerA Pro Ex",                                             0,                                    XTYPE_XBOX360
+    {0x24c6, 0x5397, XBOX360USB, false},  // "FUS1ON Tournament Controller",                              0,                                    XTYPE_XBOX360
+    {0x24c6, 0x541a, XBOXONE, false},     // "PowerA Xbox One Mini Wired Controller",                     0,                                    XTYPE_XBOXONE
+    {0x24c6, 0x542a, XBOXONE, false},     // "Xbox ONE spectra",                                          0,                                    XTYPE_XBOXONE
+    {0x24c6, 0x543a, XBOXONE, false},     // "PowerA Xbox One wired controller",                          0,                                    XTYPE_XBOXONE
+    {0x24c6, 0x5500, XBOX360USB, false},  // "Hori XBOX 360 EX 2 with Turbo",                             0,                                    XTYPE_XBOX360
+    {0x24c6, 0x5501, XBOX360USB, false},  // "Hori Real Arcade Pro VX-SA",                                0,                                    XTYPE_XBOX360
+    {0x24c6, 0x5502, XBOX360USB, false},  // "Hori Fighting Stick VX Alt",                                MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x24c6, 0x5503, XBOX360USB, false},  // "Hori Fighting Edge",                                        MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x24c6, 0x5506, XBOX360USB, false},  // "Hori SOULCALIBUR V Stick",                                  0,                                    XTYPE_XBOX360
+    {0x24c6, 0x550d, XBOX360USB, false},  // "Hori GEM Xbox controller",                                  0,                                    XTYPE_XBOX360
+    {0x24c6, 0x550e, XBOX360USB, false},  // "Hori Real Arcade Pro V Kai 360",                            MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x24c6, 0x5510, XBOX360USB, false},  // "Hori Fighting Commander ONE (Xbox 360/PC Mode)",            MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
+    {0x24c6, 0x551a, XBOXONE, false},     // "PowerA FUSION Pro Controller",                              0,                                    XTYPE_XBOXONE
+    {0x24c6, 0x561a, XBOXONE, false},     // "PowerA FUSION Controller",                                  0,                                    XTYPE_XBOXONE
+    {0x24c6, 0x581a, XBOXONE, false},     // "ThrustMaster XB1 Classic Controller",                       0,                                    XTYPE_XBOXONE
+    {0x24c6, 0x5b00, XBOX360USB, false},  // "ThrustMaster Ferrari 458 Racing Wheel",                     0,                                    XTYPE_XBOX360
+    {0x24c6, 0x5b02, XBOX360USB, false},  // "Thrustmaster, Inc. GPX Controller",                         0,                                    XTYPE_XBOX360
+    {0x24c6, 0x5b03, XBOX360USB, false},  // "Thrustmaster Ferrari 458 Racing Wheel",                     0,                                    XTYPE_XBOX360
+    {0x24c6, 0x5d04, XBOX360USB, false},  // "Razer Sabertooth",                                          0,                                    XTYPE_XBOX360
+    {0x24c6, 0xfafe, XBOX360USB, false},  // "Rock Candy Gamepad for Xbox 360",                           0,                                    XTYPE_XBOX360
+    {0x2563, 0x058d, XBOX360USB, false},  // "OneXPlayer Gamepad",                                        0,                                    XTYPE_XBOX360
+    {0x294b, 0x3303, XBOXONE, false},     // "Snakebyte GAMEPAD BASE X",                                  0,                                    XTYPE_XBOXONE
+    {0x294b, 0x3404, XBOXONE, false},     // "Snakebyte GAMEPAD RGB X",                                   0,                                    XTYPE_XBOXONE
+    {0x2993, 0x2001, XBOX360USB, false},  // "TECNO Pocket Go",                                           0,                                    XTYPE_XBOX360
+    {0x2dc8, 0x2000, XBOXONE, false},     // "8BitDo Pro 2 Wired Controller fox Xbox",                    0,                                    XTYPE_XBOXONE
+    {0x2dc8, 0x200f, XBOXONE, false},     // "8BitDo Ultimate 3-mode Controller for Xbox",                MAP_SHARE_BUTTON,                     XTYPE_XBOXONE
+    {0x2dc8, 0x3106, XBOX360USB, false},  // "8BitDo Ultimate Wireless / Pro 2 Wired Controller",         0,                                    XTYPE_XBOX360
+    {0x2dc8, 0x3109, XBOX360USB, false},  // "8BitDo Ultimate Wireless Bluetooth",                        0,                                    XTYPE_XBOX360
+    {0x2dc8, 0x310a, XBOX360USB, false},  // "8BitDo Ultimate 2C Wireless Controller",                    0,                                    XTYPE_XBOX360
+    {0x2dc8, 0x310b, XBOX360USB, false},  // "8BitDo Ultimate 2 Wireless Controller",                     0,                                    XTYPE_XBOX360
+    {0x2dc8, 0x6001, XBOX360USB, false},  // "8BitDo SN30 Pro",                                           0,                                    XTYPE_XBOX360
+    {0x2e24, 0x0423, XBOXONE, false},     // "Hyperkin DuchesS Xbox One pad",                             MAP_SHARE_BUTTON,                     XTYPE_XBOXONE
+    {0x2e24, 0x0652, XBOXONE, false},     // "Hyperkin Duke X-Box One pad",                               0,                                    XTYPE_XBOXONE
+    {0x2e24, 0x1688, XBOXONE, false},     // "Hyperkin X91 X-Box One pad",                                0,                                    XTYPE_XBOXONE
+    {0x2e95, 0x0504, XBOXONE, false},     // "SCUF Gaming Controller",                                    MAP_SHARE_BUTTON,                     XTYPE_XBOXONE
+    {0x31e3, 0x1100, XBOX360USB, false},  // "Wooting One",                                               0,                                    XTYPE_XBOX360
+    {0x31e3, 0x1200, XBOX360USB, false},  // "Wooting Two",                                               0,                                    XTYPE_XBOX360
+    {0x31e3, 0x1210, XBOX360USB, false},  // "Wooting Lekker",                                            0,                                    XTYPE_XBOX360
+    {0x31e3, 0x1220, XBOX360USB, false},  // "Wooting Two HE",                                            0,                                    XTYPE_XBOX360
+    {0x31e3, 0x1230, XBOX360USB, false},  // "Wooting Two HE (ARM)",                                      0,                                    XTYPE_XBOX360
+    {0x31e3, 0x1300, XBOX360USB, false},  // "Wooting 60HE (AVR)",                                        0,                                    XTYPE_XBOX360
+    {0x31e3, 0x1310, XBOX360USB, false},  // "Wooting 60HE (ARM)",                                        0,                                    XTYPE_XBOX360
+    {0x3285, 0x0603, XBOXONE, false},     // "Nacon Pro Compact controller for Xbox",                     0,                                    XTYPE_XBOXONE
+    {0x3285, 0x0607, XBOX360USB, false},  // "Nacon GC-100",                                              0,                                    XTYPE_XBOX360
+    {0x3285, 0x0614, XBOXONE, false},     // "Nacon Pro Compact",                                         0,                                    XTYPE_XBOXONE
+    {0x3285, 0x0646, XBOXONE, false},     // "Nacon Pro Compact",                                         0,                                    XTYPE_XBOXONE
+    {0x3285, 0x0662, XBOX360USB, false},  // "Nacon Revolution5 Pro",                                     0,                                    XTYPE_XBOX360
+    {0x3285, 0x0663, XBOXONE, false},     // "Nacon Evol-X",                                              0,                                    XTYPE_XBOXONE
+    {0x3537, 0x1004, XBOX360USB, false},  // "GameSir T4 Kaleid",                                         0,                                    XTYPE_XBOX360
+    {0x3537, 0x1010, XBOXONE, false},     // "GameSir G7 SE",                                             0,                                    XTYPE_XBOXONE
+    {0x366c, 0x0005, XBOXONE, false},     // "ByoWave Proteus Controller",                                MAP_SHARE_BUTTON,                     XTYPE_XBOXONE,  FLAG_DELAY_INIT
+    // {0x3767, 0x0101, XBOX, false},     // "Fanatec Speedster 3 Forceshock Wheel",                      0,                                    XTYPE_XBOX
+    {0x413d, 0x2104, XBOX360USB, false},  // "Black Shark Green Ghost Gamepad",                           0,                                    XTYPE_XBOX360
+    // {0xffff, 0xffff, XBOX, false},     // "Chinese-made Xbox Controller",                              0,                                    XTYPE_XBOX
+    // {0x0000, 0x0000, UNKNOWN, false},  // "Generic X-Box pad",                                         0,                                    XTYPE_UNKNOWN
 };
 
 
@@ -380,7 +385,7 @@ static uint8_t switch_packet_num = 0;
 struct SWProBTSendConfigData {
         uint8_t hid_hdr;
         uint8_t id;
-        uint8_t gpnum; //GlobalPacketNumber
+        uint8_t gpnum;  //GlobalPacketNumber
         uint8_t rumbleDataL[4];
         uint8_t rumbleDataR[4];
         uint8_t subCommand;
@@ -390,7 +395,7 @@ struct SWProBTSendConfigData {
 struct SWProBTSendConfigData1 {
         uint8_t hid_hdr;
         uint8_t id;
-        uint8_t gpnum; //GlobalPacketNumber
+        uint8_t gpnum;  //GlobalPacketNumber
         uint8_t subCommand;
         uint8_t subCommandData[38];
 } __attribute__((packed));
@@ -425,6 +430,7 @@ struct SWProStickCalibration {
 
 struct SWProStickCalibration SWStickCal;
 
+
 //-----------------------------------------------------------------------------
 void JoystickController::init()
 {
@@ -436,6 +442,7 @@ void JoystickController::init()
     BluetoothController::driver_ready_for_bluetooth(this);
 }
 
+
 //-----------------------------------------------------------------------------
 JoystickController::joytype_t JoystickController::mapVIDPIDtoJoystickType(uint16_t idVendor, uint16_t idProduct, bool exclude_hid_devices)
 {
@@ -446,8 +453,9 @@ JoystickController::joytype_t JoystickController::mapVIDPIDtoJoystickType(uint16
             return pid_vid_mapping[i].joyType;
         }
     }
-    return UNKNOWN;     // Not in our list
+    return UNKNOWN;  // Not in our list
 }
+
 
 //*****************************************************************************
 // Some simple query functions depend on which interface we are using...
@@ -460,6 +468,7 @@ uint16_t JoystickController::idVendor()
     return 0;
 }
 
+
 uint16_t JoystickController::idProduct()
 {
     if (device != nullptr) return device->idProduct;
@@ -467,13 +476,15 @@ uint16_t JoystickController::idProduct()
     return 0;
 }
 
+
 const uint8_t *JoystickController::manufacturer()
 {
     if ((device != nullptr) && (device->strbuf != nullptr)) return &device->strbuf->buffer[device->strbuf->iStrings[strbuf_t::STR_ID_MAN]];
-    //if ((btdevice != nullptr) && (btdevice->strbuf != nullptr)) return &btdevice->strbuf->buffer[btdevice->strbuf->iStrings[strbuf_t::STR_ID_MAN]];
+    // if ((btdevice != nullptr) && (btdevice->strbuf != nullptr)) return &btdevice->strbuf->buffer[btdevice->strbuf->iStrings[strbuf_t::STR_ID_MAN]];
     if ((mydevice != nullptr) && (mydevice->strbuf != nullptr)) return &mydevice->strbuf->buffer[mydevice->strbuf->iStrings[strbuf_t::STR_ID_MAN]];
     return nullptr;
 }
+
 
 const uint8_t *JoystickController::product()
 {
@@ -482,6 +493,7 @@ const uint8_t *JoystickController::product()
     if (btconnect != nullptr) return btconnect->remote_name_;
     return nullptr;
 }
+
 
 const uint8_t *JoystickController::serialNumber()
 {
@@ -492,8 +504,6 @@ const uint8_t *JoystickController::serialNumber()
 
 
 static uint8_t rumble_counter = 0;
-
-
 
 
 bool JoystickController::setRumble(uint8_t lValue, uint8_t rValue, uint8_t timeout)
@@ -517,16 +527,16 @@ bool JoystickController::setRumble(uint8_t lValue, uint8_t rValue, uint8_t timeo
         // Lets try sending a request to the XBox 1.
         if (btdriver_) {
             DBGPrintf("\nXBOXONE BT Joystick update Rumble %d %d %d\n", lValue, rValue, timeout);
-            txbuf_[0] = 0xA2;                  // HID BT DATA (0xA0) | Report Type (Output 0x02)
-            txbuf_[1] = 0x03; // ID 0x03
-            txbuf_[2] = 0x0F; // Rumble mask (what motors are activated) (0000 lT rT L R)
-            txbuf_[3] = map(lValue, 0, 1023, 0, 100); // lT force
-            txbuf_[4] = map(rValue, 0, 1023, 0, 100); // rT force
-            txbuf_[5] = map(lValue, 0, 1023, 0, 100); // L force
-            txbuf_[6] = map(rValue, 0, 1023, 0, 100); // R force
-            txbuf_[7] = 0xff; // Length of pulse
-            txbuf_[8] = 0x00; // Period between pulses
-            txbuf_[9] = 0x00; // Repeat
+            txbuf_[0] = 0xA2;                          // HID BT DATA (0xA0) | Report Type (Output 0x02)
+            txbuf_[1] = 0x03;                          // ID 0x03
+            txbuf_[2] = 0x0F;                          // Rumble mask (what motors are activated) (0000 lT rT L R)
+            txbuf_[3] = map(lValue, 0, 1023, 0, 100);  // lT force
+            txbuf_[4] = map(rValue, 0, 1023, 0, 100);  // rT force
+            txbuf_[5] = map(lValue, 0, 1023, 0, 100);  // L force
+            txbuf_[6] = map(rValue, 0, 1023, 0, 100);  // R force
+            txbuf_[7] = 0xff;                          // Length of pulse
+            txbuf_[8] = 0x00;                          // Period between pulses
+            txbuf_[9] = 0x00;                          // Repeat
             btdriver_->sendL2CapCommand(txbuf_, 10, BluetoothController::INTERRUPT_SCID);
             return true;
         }
@@ -534,20 +544,20 @@ bool JoystickController::setRumble(uint8_t lValue, uint8_t rValue, uint8_t timeo
         txbuf_[0] = 0x9;
         txbuf_[1] = 0x0;
         txbuf_[2] = 0x0;
-        txbuf_[3] = 0x09; // Substructure (what substructure rest of this packet has)
-        txbuf_[4] = 0x00; // Mode
-        txbuf_[5] = 0x0f; // Rumble mask (what motors are activated) (0000 lT rT L R)
-        txbuf_[6] = 0x0; // lT force
-        txbuf_[7] = 0x0; // rT force
-        txbuf_[8] = lValue; // L force
-        txbuf_[9] = rValue; // R force
-        txbuf_[10] = 0xff; // Length of pulse
-        txbuf_[11] = 0x00; // Period between pulses
-        txbuf_[12] = 0x00; // Repeat
+        txbuf_[3] = 0x09;    // Substructure (what substructure rest of this packet has)
+        txbuf_[4] = 0x00;    // Mode
+        txbuf_[5] = 0x0f;    // Rumble mask (what motors are activated) (0000 lT rT L R)
+        txbuf_[6] = 0x0;     // lT force
+        txbuf_[7] = 0x0;     // rT force
+        txbuf_[8] = lValue;  // L force
+        txbuf_[9] = rValue;  // R force
+        txbuf_[10] = 0xff;   // Length of pulse
+        txbuf_[11] = 0x00;   // Period between pulses
+        txbuf_[12] = 0x00;   // Repeat
         if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 13, this, __LINE__)) {
             println("XBoxOne rumble transfer fail");
         }
-        return true;    //
+        return true;  //
     case XBOX360W:
         txbuf_[0] = 0x00;
         txbuf_[1] = 0x01;
@@ -586,9 +596,9 @@ bool JoystickController::setRumble(uint8_t lValue, uint8_t rValue, uint8_t timeo
         if (btdriver_) {
             struct SWProBTSendConfigData *packet =  (struct SWProBTSendConfigData *)txbuf_ ;
             memset((void*)packet, 0, sizeof(struct SWProBTSendConfigData));
-            packet->hid_hdr = 0xA2; // HID BT Get_report (0xA0) | Report Type (Output)
+            packet->hid_hdr = 0xA2;  // HID BT Get_report (0xA0) | Report Type (Output)
             packet->id = 0x10;
-            if(switch_packet_num > 0x10) switch_packet_num = 0;
+            if (switch_packet_num > 0x10) switch_packet_num = 0;
             packet->gpnum = switch_packet_num;
             switch_packet_num = (switch_packet_num + 1) & 0x0f;
             // 2-9 rumble data;
@@ -597,20 +607,20 @@ bool JoystickController::setRumble(uint8_t lValue, uint8_t rValue, uint8_t timeo
             uint8_t rumble_on[8] = {0x28, 0x88, 0x60, 0x61, 0x28, 0x88, 0x60, 0x61};
             uint8_t rumble_off[8] =  {0x00, 0x01, 0x40, 0x40, 0x00, 0x01, 0x40, 0x40};
 
-            //if ((lValue == 0x00) && (rValue == 0x00)) {
-            //	for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_off[i];
-            //	for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_off[i];
-            //}
+            // if ((lValue == 0x00) && (rValue == 0x00)) {
+            //    for (uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_off[i];
+            //    for (uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_off[i];
+            // }
             if ((lValue != 0x0) || (rValue != 0x0)) {
                 if (lValue != 0 && rValue == 0) {
-                    for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_off[i];
-                    for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_on[i];
+                    for (uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_off[i];
+                    for (uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_on[i];
                 } else if (rValue != 0 && lValue == 0) {
-                    for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_on[i];
-                    for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_off[i];
+                    for (uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_on[i];
+                    for (uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_off[i];
                 } else if (rValue != 0 && lValue != 0) {
-                    for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_on[i];
-                    for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_on[i];
+                    for (uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_on[i];
+                    for (uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_on[i];
                 }
             }
 
@@ -624,40 +634,40 @@ bool JoystickController::setRumble(uint8_t lValue, uint8_t rValue, uint8_t timeo
         Serial.printf("Set Rumble data (USB): %d, %d\n", lValue, rValue);
 
         memset(txbuf_, 0, 18);  // make sure it is cleared out
-        //txbuf_[0] = 0x80;
-        //txbuf_[1] = 0x92;
-        //txbuf_[3] = 0x31;
-        txbuf_[0] = 0x10;   // Command
+        // txbuf_[0] = 0x80;
+        // txbuf_[1] = 0x92;
+        // txbuf_[3] = 0x31;
+        txbuf_[0] = 0x10;  // Command
 
         // Now add in subcommand data:
         // Probably do this better soon
-        if(switch_packet_num > 0x10) switch_packet_num = 0;
+        if (switch_packet_num > 0x10) switch_packet_num = 0;
         txbuf_[1 + 0] = switch_packet_num;
-        switch_packet_num = (switch_packet_num + 1) & 0x0f; //
+        switch_packet_num = (switch_packet_num + 1) & 0x0f;  //
 
         uint8_t rumble_on[8] = {0x28, 0x88, 0x60, 0x61, 0x28, 0x88, 0x60, 0x61};
         uint8_t rumble_off[8] =  {0x00, 0x01, 0x40, 0x40, 0x00, 0x01, 0x40, 0x40};
 
-        //if ((lValue == 0x00) && (rValue == 0x00)) {
-        //	for(uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_off[i];
-        //	for(uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_off[i];
-        //}
+        // if ((lValue == 0x00) && (rValue == 0x00)) {
+        //    for (uint8_t i = 0; i < 4; i++) packet->rumbleDataR[i] = rumble_off[i];
+        //    for (uint8_t i = 4; i < 8; i++) packet->rumbleDataL[i-4] = rumble_off[i];
+        // }
         if ((lValue != 0x0) || (rValue != 0x0)) {
             if (lValue != 0 && rValue == 0x00) {
-                for(uint8_t i = 0; i < 4; i++) txbuf_[i + 2] = rumble_off[i];
-                for(uint8_t i = 4; i < 8; i++) txbuf_[i - 4 + 6] = rumble_on[i];
+                for (uint8_t i = 0; i < 4; i++) txbuf_[i + 2] = rumble_off[i];
+                for (uint8_t i = 4; i < 8; i++) txbuf_[i - 4 + 6] = rumble_on[i];
             } else if (rValue != 0 && lValue == 0x00) {
-                for(uint8_t i = 0; i < 4; i++) txbuf_[i + 2] = rumble_on[i];
-                for(uint8_t i = 4; i < 8; i++) txbuf_[i - 4 + 6] = rumble_off[i];
+                for (uint8_t i = 0; i < 4; i++) txbuf_[i + 2] = rumble_on[i];
+                for (uint8_t i = 4; i < 8; i++) txbuf_[i - 4 + 6] = rumble_off[i];
             } else if (rValue != 0 && lValue != 0) {
-                for(uint8_t i = 0; i < 4; i++) txbuf_[i + 2] = rumble_on[i];
-                for(uint8_t i = 4; i < 8; i++) txbuf_[i - 4 + 6] = rumble_on[i];
+                for (uint8_t i = 0; i < 4; i++) txbuf_[i + 2] = rumble_on[i];
+                for (uint8_t i = 4; i < 8; i++) txbuf_[i - 4 + 6] = rumble_on[i];
             }
         }
         txbuf_[11] = 0x00;
         txbuf_[12] = 0x00;
 
-        if(driver_) {
+        if (driver_) {
             driver_->sendPacket(txbuf_, 18);
         } else if (txpipe_) {
             if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 12, this, __LINE__)) {
@@ -674,7 +684,7 @@ bool JoystickController::setRumble(uint8_t lValue, uint8_t rValue, uint8_t timeo
 
 bool JoystickController::setLEDs(uint8_t lr, uint8_t lg, uint8_t lb)
 {
-    // Need to know which joystick we are on.  Start off with XBox support - maybe need to add some enum value for the known
+    // Need to know which joystick we are on. Start off with XBox support - maybe need to add some enum value for the known
     // joystick types.
     DBGPrintf("::setLEDS(%x %x %x)\n", lr, lg, lb);
     if ((leds_[0] != lr) || (leds_[1] != lg) || (leds_[2] != lb)) {
@@ -710,22 +720,22 @@ bool JoystickController::setLEDs(uint8_t lr, uint8_t lg, uint8_t lb)
             }
             return true;
         case XBOX360USB:
-            // Pattern	 Description
-            // 0x00	 All off
-            // 0x01	 All blinking
-            // 0x02	 1 flashes, then on
-            // 0x03	 2 flashes, then on
-            // 0x04	 3 flashes, then on
-            // 0x05	 4 flashes, then on
-            // 0x06	 1 on
-            // 0x07	 2 on
-            // 0x08	 3 on
-            // 0x09	 4 on
-            // 0x0A	 Rotating (e.g. 1-2-4-3)
-            // 0x0B	 Blinking*
-            // 0x0C	 Slow blinking*
-            // 0x0D	 Alternating (e.g. 1+4-2+3), then back to previous*
-
+        /*  Pattern  Description
+            0x00     All off
+            0x01     All blinking
+            0x02     1 flashes, then on
+            0x03     2 flashes, then on
+            0x04     3 flashes, then on
+            0x05     4 flashes, then on
+            0x06     1 on
+            0x07     2 on
+            0x08     3 on
+            0x09     4 on
+            0x0A     Rotating (e.g. 1-2-4-3)
+            0x0B     Blinking*
+            0x0C     Slow blinking*
+            0x0D     Alternating (e.g. 1+4-2+3), then back to previous*
+        */
             txbuf_[0] = 0x01;
             txbuf_[1] = 0x03;
             txbuf_[2] = lr;
@@ -738,33 +748,33 @@ bool JoystickController::setLEDs(uint8_t lr, uint8_t lg, uint8_t lb)
                 DBGPrintf("Init LEDs\n");
                 struct SWProBTSendConfigData *packet =  (struct SWProBTSendConfigData *)txbuf_ ;
                 memset((void*)packet, 0, sizeof(struct SWProBTSendConfigData));
-                packet->hid_hdr = 0xA2; // HID BT Get_report (0xA0) | Report Type (Output)
+                packet->hid_hdr = 0xA2;  // HID BT Get_report (0xA0) | Report Type (Output)
                 packet->id = 1;
                 packet->gpnum = switch_packet_num;
                 switch_packet_num = (switch_packet_num + 1) & 0x0f;
-                // 2-9 rumble data;
-                /*packet->rumbleDataL[0] = 0x00;
-                packet->rumbleDataL[1] = 0x01;
-                packet->rumbleDataL[2] = 0x40;
-                packet->rumbleDataL[3] = 0x00;
-                packet->rumbleDataR[0] = 0x00;
-                packet->rumbleDataR[1] = 0x01;
-                packet->rumbleDataR[2] = 0x40;
-                packet->rumbleDataR[3] = 0x00; */
+                /* 2-9 rumble data; */
+                // packet->rumbleDataL[0] = 0x00;
+                // packet->rumbleDataL[1] = 0x01;
+                // packet->rumbleDataL[2] = 0x40;
+                // packet->rumbleDataL[3] = 0x00;
+                // packet->rumbleDataR[0] = 0x00;
+                // packet->rumbleDataR[1] = 0x01;
+                // packet->rumbleDataR[2] = 0x40;
+                // packet->rumbleDataR[3] = 0x00;
 
-                packet->subCommand = 0x30; // Report ID
-                packet->subCommandData[0] = lr; // try full 0x30?; // Report ID
+                packet->subCommand = 0x30;  // Report ID
+                packet->subCommandData[0] = lr;  // try full 0x30?;  // Report ID
                 btdriver_->sendL2CapCommand((uint8_t *)packet, sizeof(struct SWProBTSendConfigData), BluetoothController::INTERRUPT_SCID /*0x40*/);
                 return true;
             }
 
             memset(txbuf_, 0, 20);  // make sure it is cleared out
 
-            txbuf_[0] = 0x01;   // Command
+            txbuf_[0] = 0x01;  // Command
 
             // Now add in subcommand data:
             // Probably do this better soon
-            txbuf_[1 + 0] = rumble_counter++; //
+            txbuf_[1 + 0] = rumble_counter++;  //
             txbuf_[1 + 1] = 0x00;
             txbuf_[1 + 2] = 0x01;
             txbuf_[1 + 3] = 0x40;
@@ -774,12 +784,12 @@ bool JoystickController::setLEDs(uint8_t lr, uint8_t lg, uint8_t lb)
             txbuf_[1 + 7] = 0x40;
             txbuf_[1 + 8] = 0x40;
 
-            txbuf_[1 + 9] = 0x30; // LED Command
+            txbuf_[1 + 9] = 0x30;  // LED Command
             txbuf_[1 + 10] = lr;
             println("Switch set leds: driver? ", (uint32_t)driver_, HEX);
             print_hexbytes((uint8_t*)txbuf_, 20);
 
-            if(driver_) {
+            if (driver_) {
                 driver_->sendPacket(txbuf_, 20);
             } else if (txpipe_) {
                 if (!queue_Data_Transfer_Debug(txpipe_, txbuf_, 20, this, __LINE__)) {
@@ -797,17 +807,18 @@ bool JoystickController::setLEDs(uint8_t lr, uint8_t lg, uint8_t lb)
 }
 
 
-bool JoystickController::transmitPS4UserFeedbackMsg() {
+bool JoystickController::transmitPS4UserFeedbackMsg()
+{
     if (driver_)  {
         uint8_t packet[32];
         memset(packet, 0, sizeof(packet));
 
-        packet[0] = 0x05; // Report ID
+        packet[0] = 0x05;  // Report ID
         packet[1] = 0xFF;
 
-        packet[4] = rumble_lValue_; // Small Rumble
-        packet[5] = rumble_rValue_; // Big rumble
-        packet[6] = leds_[0]; // RGB value
+        packet[4] = rumble_lValue_;  // Small Rumble
+        packet[5] = rumble_rValue_;  // Big rumble
+        packet[6] = leds_[0];  // RGB value
         packet[7] = leds_[1];
         packet[8] = leds_[2];
         // 9, 10 flash ON, OFF times in 100ths of second?  2.5 seconds = 255
@@ -816,16 +827,16 @@ bool JoystickController::transmitPS4UserFeedbackMsg() {
     } else if (btdriver_) {
         uint8_t packet[79];
         memset(packet, 0, sizeof(packet));
-//0xa2, 0x11, 0xc0, 0x20, 0xf0, 0x04, 0x00
+        // 0xa2, 0x11, 0xc0, 0x20, 0xf0, 0x04, 0x00
         packet[0] = 0x52;
-        packet[1] = 0x11;      // Report ID
+        packet[1] = 0x11;  // Report ID
         packet[2] = 0x80;
-        //packet[3] = 0x20;
+        // packet[3] = 0x20;
         packet[4] = 0xFF;
 
-        packet[7] = rumble_lValue_; // Small Rumble
-        packet[8] = rumble_rValue_; // Big rumble
-        packet[9] = leds_[0]; // RGB value
+        packet[7] = rumble_lValue_;  // Small Rumble
+        packet[8] = rumble_rValue_;  // Big rumble
+        packet[9] = leds_[0];  // RGB value
         packet[10] = leds_[1];
         packet[11] = leds_[2];
 
@@ -837,6 +848,7 @@ bool JoystickController::transmitPS4UserFeedbackMsg() {
     }
     return false;
 }
+
 
 static const uint8_t PS3_USER_FEEDBACK_INIT[] = {
     0x00, 0x00, 0x00, 0x00, 0x00,
@@ -851,16 +863,18 @@ static const uint8_t PS3_USER_FEEDBACK_INIT[] = {
     0x00, 0x00, 0x00
 };
 
-bool JoystickController::transmitPS3UserFeedbackMsg() {
+
+bool JoystickController::transmitPS3UserFeedbackMsg()
+{
     if (driver_) {
         memcpy(txbuf_, PS3_USER_FEEDBACK_INIT, 48);
 
         txbuf_[1] = rumble_lValue_ ? rumble_timeout_ : 0;
-        txbuf_[2] = rumble_lValue_; // Small Rumble
+        txbuf_[2] = rumble_lValue_;  // Small Rumble
         txbuf_[3] = rumble_rValue_ ? rumble_timeout_ : 0;
-        txbuf_[4] = rumble_rValue_; // Big rumble
-        txbuf_[9] = leds_[2] << 1; // RGB value     // using third led now...
-        //DBGPrintf("\nJoystick update Rumble/LEDs %d %d %d %d %d\n",  txbuf_[1], txbuf_[2],  txbuf_[3],  txbuf_[4],  txbuf_[9]);
+        txbuf_[4] = rumble_rValue_;  // Big rumble
+        txbuf_[9] = leds_[2] << 1;  // RGB value  // using third led now...
+        // DBGPrintf("\nJoystick update Rumble/LEDs %d %d %d %d %d\n",  txbuf_[1], txbuf_[2],  txbuf_[3],  txbuf_[4],  txbuf_[9]);
         return driver_->sendControlPacket(0x21, 9, 0x201, 0, 48, txbuf_);
     } else if (btdriver_) {
         txbuf_[0] = 0x52;
@@ -868,10 +882,10 @@ bool JoystickController::transmitPS3UserFeedbackMsg() {
         memcpy(&txbuf_[2], PS3_USER_FEEDBACK_INIT, 48);
 
         txbuf_[3] = rumble_lValue_ ? rumble_timeout_ : 0;
-        txbuf_[4] = rumble_lValue_; // Small Rumble
+        txbuf_[4] = rumble_lValue_;  // Small Rumble
         txbuf_[5] = rumble_rValue_ ? rumble_timeout_ : 0;
-        txbuf_[6] = rumble_rValue_; // Big rumble
-        txbuf_[11] = leds_[2] << 1; // RGB value
+        txbuf_[6] = rumble_rValue_;  // Big rumble
+        txbuf_[11] = leds_[2] << 1;  // RGB value
         DBGPrintf("\nJoystick update Rumble/LEDs %d %d %d %d %d\n",  txbuf_[3], txbuf_[4],  txbuf_[5],  txbuf_[6],  txbuf_[11]);
         btdriver_->sendL2CapCommand(txbuf_, 50, BluetoothController::CONTROL_SCID);
         return true;
@@ -879,23 +893,26 @@ bool JoystickController::transmitPS3UserFeedbackMsg() {
     return false;
 }
 
-#define MOVE_REPORT_BUFFER_SIZE 7
-#define MOVE_HID_BUFFERSIZE 50 // Size of the buffer for the Playstation Motion Controller
 
-bool JoystickController::transmitPS3MotionUserFeedbackMsg() {
+#define MOVE_REPORT_BUFFER_SIZE 7
+#define MOVE_HID_BUFFERSIZE 50  // Size of the buffer for the Playstation Motion Controller
+
+
+bool JoystickController::transmitPS3MotionUserFeedbackMsg()
+{
     if (driver_) {
-        txbuf_[0] = 0x02; // Set report ID, this is needed for Move commands to work
+        txbuf_[0] = 0x02;  // Set report ID, this is needed for Move commands to work
         txbuf_[2] = leds_[0];
         txbuf_[3] = leds_[1];
         txbuf_[4] = leds_[2];
-        txbuf_[6] = rumble_lValue_; // Set the rumble value into the write buffer
+        txbuf_[6] = rumble_lValue_;  // Set the rumble value into the write buffer
 
-        //return driver_->sendControlPacket(0x21, 9, 0x201, 0, MOVE_REPORT_BUFFER_SIZE, txbuf_);
+        // return driver_->sendControlPacket(0x21, 9, 0x201, 0, MOVE_REPORT_BUFFER_SIZE, txbuf_);
         return driver_->sendPacket(txbuf_, MOVE_REPORT_BUFFER_SIZE);
 
     } else if (btdriver_) {
-        txbuf_[0] = 0xA2; // HID BT DATA_request (0xA0) | Report Type (Output 0x02)
-        txbuf_[1] = 0x02; // Report ID
+        txbuf_[0] = 0xA2;  // HID BT DATA_request (0xA0) | Report Type (Output 0x02)
+        txbuf_[1] = 0x02;  // Report ID
         txbuf_[3] = leds_[0];
         txbuf_[4] = leds_[1];
         txbuf_[5] = leds_[2];
@@ -905,6 +922,7 @@ bool JoystickController::transmitPS3MotionUserFeedbackMsg() {
     }
     return false;
 }
+
 
 //*****************************************************************************
 // Support for Joysticks that Use HID data.
@@ -924,10 +942,10 @@ hidclaim_t JoystickController::claim_collection(USBHIDParser *driver, Device_t *
 
     mydevice = dev;
     collections_claimed++;
-    anychange = true; // always report values on first read
-    driver_ = driver;   // remember the driver.
+    anychange = true;  // always report values on first read
+    driver_ = driver;  // remember the driver.
     driver_->setTXBuffers(txbuf_, nullptr, sizeof(txbuf_));
-    connected_ = true;      // remember that hardware is actually connected...
+    connected_ = true;  // remember that hardware is actually connected...
 
     // Lets see if we know what type of joystick this is. That is, is it a PS3 or PS4 or ...
     joystickType_ = mapVIDPIDtoJoystickType(mydevice->idVendor, mydevice->idProduct, false);
@@ -944,7 +962,7 @@ hidclaim_t JoystickController::claim_collection(USBHIDParser *driver, Device_t *
         additional_axis_usage_page_ = 0xFF00;
         additional_axis_usage_start_ = 0x21;
         additional_axis_usage_count_ = 54;
-        axis_change_notify_mask_ = (uint64_t)0xfffffffffffff3ffl;   // Start off assume all bits - 10 and 11
+        axis_change_notify_mask_ = (uint64_t)0xfffffffffffff3ffl;  // Start off assume all bits - 10 and 11
         break;
      case SWITCH:
         // bugbug set the hand shake...
@@ -960,14 +978,15 @@ hidclaim_t JoystickController::claim_collection(USBHIDParser *driver, Device_t *
         additional_axis_usage_page_ = 0x09;
         additional_axis_usage_start_ = 0x21;
         additional_axis_usage_count_ = 5;
-        axis_change_notify_mask_ = 0x3ff;   // Start off assume only the 10 bits...
+        axis_change_notify_mask_ = 0x3ff;  // Start off assume only the 10 bits...
     }
 
 
-    //DBGPrintf("Claim Additional axis: %x %x %d\n", additional_axis_usage_page_, additional_axis_usage_start_, additional_axis_usage_count_);
+    // DBGPrintf("Claim Additional axis: %x %x %d\n", additional_axis_usage_page_, additional_axis_usage_start_, additional_axis_usage_count_);
     USBHDBGSerial.printf("\tJoystickController claim collection\n");
     return CLAIM_REPORT;
 }
+
 
 void JoystickController::disconnect_collection(Device_t *dev)
 {
@@ -979,11 +998,13 @@ void JoystickController::disconnect_collection(Device_t *dev)
     }
 }
 
+
 void JoystickController::hid_input_begin(uint32_t topusage, uint32_t type, int lgmin, int lgmax)
 {
     // TODO: set up translation from logical min/max to consistent 16 bit scale
 
 }
+
 
 void JoystickController::hid_input_data(uint32_t usage, int32_t value)
 {
@@ -1008,7 +1029,7 @@ void JoystickController::hid_input_data(uint32_t usage, int32_t value)
         // TODO: need scaling of value to consistent API, 16 bit signed?
         // TODO: many joysticks repeat slider usage.  Detect & map to axis?
         uint32_t i = usage - 0x30;
-        axis_mask_ |= (1 << i);     // Keep record of which axis we have data on.
+        axis_mask_ |= (1 << i);  // Keep record of which axis we have data on.
         if (axis[i] != value) {
             axis[i] = value;
             axis_changed_mask_ |= (1 << i);
@@ -1017,21 +1038,21 @@ void JoystickController::hid_input_data(uint32_t usage, int32_t value)
         }
     } else if (usage_page == additional_axis_usage_page_) {
         // see if the usage is witin range.
-        //DBGPrintf("UP: usage_page=%x usage=%x User: %x %d\n", usage_page, usage, user_buttons_usage_start, user_buttons_count_);
+        // DBGPrintf("UP: usage_page=%x usage=%x User: %x %d\n", usage_page, usage, user_buttons_usage_start, user_buttons_count_);
         if ((usage >= additional_axis_usage_start_) && (usage < (additional_axis_usage_start_ + additional_axis_usage_count_))) {
             // We are in the user range.
             uint16_t usage_index = usage - additional_axis_usage_start_ + STANDARD_AXIS_COUNT;
             if (usage_index < (sizeof(axis) / sizeof(axis[0]))) {
                 if (axis[usage_index] != value) {
                     axis[usage_index] = value;
-                    if (usage_index > 63) usage_index = 63; // don't overflow our mask
-                    axis_changed_mask_ |= ((uint64_t)1 << usage_index);     // Keep track of which ones changed.
+                    if (usage_index > 63) usage_index = 63;  // don't overflow our mask
+                    axis_changed_mask_ |= ((uint64_t)1 << usage_index);  // Keep track of which ones changed.
                     if (axis_changed_mask_ & axis_change_notify_mask_)
-                        anychange = true;   // We have changes...
+                        anychange = true;  // We have changes...
                 }
-                axis_mask_ |= ((uint64_t)1 << usage_index);     // Keep record of which axis we have data on.
+                axis_mask_ |= ((uint64_t)1 << usage_index);  // Keep record of which axis we have data on.
             }
-            //DBGPrintf("UB: index=%x value=%x\n", usage_index, value);
+            // DBGPrintf("UB: index=%x value=%x\n", usage_index, value);
         }
 
     } else {
@@ -1042,6 +1063,7 @@ void JoystickController::hid_input_data(uint32_t usage, int32_t value)
 
 }
 
+
 void JoystickController::hid_input_end()
 {
     if (anychange) {
@@ -1049,11 +1071,13 @@ void JoystickController::hid_input_end()
     }
 }
 
+
 bool JoystickController::hid_process_out_data(const Transfer_t *transfer)
 {
     DBGPrintf("JoystickController::hid_process_out_data\n");
     return true;
 }
+
 
 //---------------------------------------------------
 // Try to handle some of the startup code messages for Switch controll
@@ -1062,7 +1086,7 @@ bool JoystickController::sw_handle_usb_init_of_joystick(uint8_t *buffer, uint16_
 {
     if (buffer) {
         if ((buffer[0] != 0x81) && (buffer[0] != 0x21))
-            return false; // was not an event message
+            return false;  // was not an event message
         driver_->stopTimer();
         uint8_t ack_rpt = buffer[0];
         if (ack_rpt == 0x81) {
@@ -1075,7 +1099,7 @@ bool JoystickController::sw_handle_usb_init_of_joystick(uint8_t *buffer, uint16_
                 default:  DBGPrintf("???");
             }
 
-            if (!initialPass_) return true; // don't need to process
+            if (!initialPass_) return true;  // don't need to process
 
             if (sw_last_cmd_sent_ == ack_rpt) {
                 sw_last_cmd_repeat_count = 0;
@@ -1092,8 +1116,10 @@ bool JoystickController::sw_handle_usb_init_of_joystick(uint8_t *buffer, uint16_
                 }
             }
         } else {
-            // 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
-            //21 0a 71 00 80 00 01 e8 7f 01 e8 7f 0c 80 40 00 00 00 00 00 00 ...
+            /*
+                0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+                21 0a 71 00 80 00 01 e8 7f 01 e8 7f 0c 80 40 00 00 00 00 00 00 ...
+            */
             uint8_t ack_21_subrpt = buffer[14];
             sw_parseAckMsg(buffer);
             DBGPrintf("\t(%u)CMD Submd ack cmd: %x \n", (uint32_t)em_sw_, ack_21_subrpt);
@@ -1105,14 +1131,14 @@ bool JoystickController::sw_handle_usb_init_of_joystick(uint8_t *buffer, uint16_
                 default: DBGPrintf("Other"); break;
             }
 
-            if (!initialPass_) return true; // don't need to process
+            if (!initialPass_) return true;  // don't need to process
             sw_last_cmd_repeat_count = 0;
             connectedComplete_pending_++;
 
         }
 
     } else if (timer_event) {
-        if (!initialPass_) return true; // don't need to process
+        if (!initialPass_) return true;  // don't need to process
         DBGPrintf("\t(%u)Timer event - advance\n", (uint32_t)em_sw_);
         sw_last_cmd_repeat_count = 0;
         connectedComplete_pending_++;
@@ -1124,7 +1150,7 @@ bool JoystickController::sw_handle_usb_init_of_joystick(uint8_t *buffer, uint16_
     uint8_t packet_[8];
     switch(connectedComplete_pending_) {
         case 0:
-            //Change Baud
+            // Change Baud
             DBGPrintf("Change Baud\n");
             sw_sendCmdUSB(0x03, SW_CMD_TIMEOUT);
             break;
@@ -1139,7 +1165,7 @@ bool JoystickController::sw_handle_usb_init_of_joystick(uint8_t *buffer, uint16_
             packet_[2] = 0x00;
             packet_[3] = 0x00;
             packet_[4] = (0x6037 - 0x6020 + 1);
-            sw_sendSubCmdUSB(0x10, packet_, 5, SW_CMD_TIMEOUT);   // doesnt work wired
+            sw_sendSubCmdUSB(0x10, packet_, 5, SW_CMD_TIMEOUT);  // doesnt work wired
             break;
         case 3:
             DBGPrintf("\nTry to Get IMU Horizontal Offset Data\n");
@@ -1197,7 +1223,7 @@ bool JoystickController::hid_process_in_data(const Transfer_t *transfer)
     uint8_t *buffer = (uint8_t *)transfer->buffer;
     if (*buffer) report_id_ = *buffer;
     uint8_t cnt = transfer->length;
-    if (!buffer || *buffer == 1) return false; // don't do report 1
+    if (!buffer || *buffer == 1) return false;  // don't do report 1
 
     DBGPrintf("hid_process_in_data %x %u %u %p %x %x:", transfer->buffer, transfer->length, joystickType_, txpipe_, initialPass_, connectedComplete_pending_);
     for (uint8_t i = 0; i < cnt; i++) DBGPrintf(" %02x", buffer[i]);
@@ -1208,12 +1234,13 @@ bool JoystickController::hid_process_in_data(const Transfer_t *transfer)
             return true;
         // the main HID parse code should handle it.
         sw_process_HID_data(buffer, cnt);
-        return true; // don't let main hid code process this.
+        return true;  // don't let main hid code process this.
     }
 
 
     return false;
 }
+
 
 void JoystickController::hid_timer_event(USBDriverTimer *whichTimer)
 {
@@ -1223,6 +1250,7 @@ void JoystickController::hid_timer_event(USBDriverTimer *whichTimer)
     sw_handle_usb_init_of_joystick(nullptr, 0, true);
 }
 
+
 void JoystickController::bt_hid_timer_event(USBDriverTimer *whichTimer)
 {
     DBGPrintf("Bluetooth JoystickController: Timer\n");
@@ -1231,7 +1259,9 @@ void JoystickController::bt_hid_timer_event(USBDriverTimer *whichTimer)
     sw_handle_bt_init_of_joystick(nullptr, 0, true);
 }
 
-bool JoystickController::hid_process_control(const Transfer_t *transfer) {
+
+bool JoystickController::hid_process_control(const Transfer_t *transfer)
+{
     Serial.printf("USBHIDParser::control msg: %x %x : %x %u :", transfer->setup.word1, transfer->setup.word2, transfer->buffer, transfer->length);
     if (transfer->buffer) {
         uint16_t cnt = transfer->length;
@@ -1244,12 +1274,15 @@ bool JoystickController::hid_process_control(const Transfer_t *transfer) {
     return false;
 }
 
-void JoystickController::joystickDataClear() {
+
+void JoystickController::joystickDataClear()
+{
     joystickEvent = false;
     anychange = false;
     axis_changed_mask_ = 0;
     axis_mask_ = 0;
 }
+
 
 //*****************************************************************************
 // Support for Joysticks that are class specific and do not use HID
@@ -1260,8 +1293,10 @@ static  uint8_t xboxone_start_input[] = {0x05, 0x20, 0x00, 0x01, 0x00};
 static  uint8_t xboxone_start_pdp_afterglow[] = {0x06, 0x20, 0x07, 0x02, 0x01, 0x00};
 static  uint8_t xbox360w_inquire_present[] = {0x08, 0x00, 0x0F, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static  uint8_t xbox360usb_start_input[] = {0x80, 0x02};
-//static  uint8_t switch_start_input[] = {0x19, 0x01, 0x03, 0x07, 0x00, 0x00, 0x92, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10};
+// static  uint8_t switch_start_input[] = {0x19, 0x01, 0x03, 0x07, 0x00, 0x00, 0x92, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10};
 static  uint8_t switch_start_input[] = {0x80, 0x02};
+
+
 bool JoystickController::claim(Device_t *dev, int type, const uint8_t *descriptors, uint32_t len)
 {
     println("JoystickController claim this=", (uint32_t)this, HEX);
@@ -1301,14 +1336,12 @@ bool JoystickController::claim(Device_t *dev, int type, const uint8_t *descripto
     // 07 05 81 03 20 00 08
     // 07 05 02 03 20 00 08
 
-
-
     if (len < 9 + 7 + 7) return false;
 
     // Some common stuff for both XBoxs
     uint32_t count_end_points = descriptors[4];
     if (count_end_points < 2) return false;
-    if (descriptors[5] != 0xff) return false; // bInterfaceClass, 3 = HID
+    if (descriptors[5] != 0xff) return false;  // bInterfaceClass, 3 = HID
     rx_ep_ = 0;
     uint32_t txep = 0;
     uint8_t rx_interval = 0;
@@ -1317,16 +1350,16 @@ bool JoystickController::claim(Device_t *dev, int type, const uint8_t *descripto
     tx_size_ = 0;
     uint32_t descriptor_index = 9;
     if (descriptors[descriptor_index + 1] == 0x22)  {
-        if (descriptors[descriptor_index] != 0x14) return false; // only support specific versions...
-        descriptor_index += descriptors[descriptor_index]; // XBox360w ignore this unknown setup...
+        if (descriptors[descriptor_index] != 0x14) return false;  // only support specific versions...
+        descriptor_index += descriptors[descriptor_index];  // XBox360w ignore this unknown setup...
     }
     while ((rx_ep_ == 0) || txep == 0) {
         print("  Index:", descriptor_index, DEC);
 
-        if (descriptor_index >= len) return false;          // we ran off the end and did not get end points
+        if (descriptor_index >= len) return false;  // we ran off the end and did not get end points
         // see if the next data is an end point descript
         if ((descriptors[descriptor_index] == 7) && (descriptors[descriptor_index + 1] == 5)) {
-            if ((descriptors[descriptor_index + 3] == 3)            // Type 3...
+            if ((descriptors[descriptor_index + 3] == 3)  // Type 3...
                     && (descriptors[descriptor_index + 4] <= 64)
                     && (descriptors[descriptor_index + 5] == 0)) {
                 // have a bulk EP size
@@ -1343,7 +1376,7 @@ bool JoystickController::claim(Device_t *dev, int type, const uint8_t *descripto
         }
         descriptor_index += descriptors[descriptor_index];  // setup to look at next one...
     }
-    if ((rx_ep_ == 0) || (txep == 0)) return false; // did not find two end points.
+    if ((rx_ep_ == 0) || (txep == 0)) return false;  // did not find two end points.
     print("JoystickController, rx_ep_=", rx_ep_ & 15);
     print("(", rx_size_);
     print("), txep=", txep);
@@ -1353,7 +1386,7 @@ bool JoystickController::claim(Device_t *dev, int type, const uint8_t *descripto
     if (!rxpipe_) return false;
     txpipe_ = new_Pipe(dev, 3, txep, 0, tx_size_, tx_interval);
     if (!txpipe_) {
-        //free_Pipe(rxpipe_);
+        // free_Pipe(rxpipe_);
         return false;
     }
     rxpipe_->callback_function = rx_callback;
@@ -1363,22 +1396,23 @@ bool JoystickController::claim(Device_t *dev, int type, const uint8_t *descripto
 
     if (jtype == XBOXONE) {
         queue_Data_Transfer_Debug(txpipe_, xboxone_start_input, sizeof(xboxone_start_input), this, __LINE__);
-        connected_ = true;      // remember that hardware is actually connected...
+        connected_ = true;  // remember that hardware is actually connected...
     } else if (jtype == XBOX360W) {
         queue_Data_Transfer_Debug(txpipe_, xbox360w_inquire_present, sizeof(xbox360w_inquire_present), this, __LINE__);
-        connected_ = 0;     // remember that hardware is actually connected...
+        connected_ = 0;  // remember that hardware is actually connected...
     } else if (jtype == XBOX360USB) {
         queue_Data_Transfer_Debug(txpipe_, xbox360usb_start_input, sizeof(xbox360usb_start_input), this, __LINE__);
-        connected_ = 0;     // check for hardware connection in rx_data
+        connected_ = 0;  // check for hardware connection in rx_data
     } else if (jtype == SWITCH) {
         queue_Data_Transfer_Debug(txpipe_, switch_start_input, sizeof(switch_start_input), this, __LINE__);
-        connected_ = true;      // remember that hardware is actually connected...
+        connected_ = true;  // remember that hardware is actually connected...
     }
     memset(axis, 0, sizeof(axis));  // clear out any data.
-    joystickType_ = jtype;      // remember we are an XBox One.
+    joystickType_ = jtype;  // remember we are an XBox One.
     DBGPrintf("   JoystickController::claim joystickType_ %d\n", joystickType_);
     return true;
 }
+
 
 void JoystickController::control(const Transfer_t *transfer)
 {
@@ -1386,7 +1420,7 @@ void JoystickController::control(const Transfer_t *transfer)
 
 
 /************************************************************/
-//  Interrupt-based Data Movement
+// Interrupt-based Data Movement
 /************************************************************/
 
 void JoystickController::rx_callback(const Transfer_t *transfer)
@@ -1394,6 +1428,7 @@ void JoystickController::rx_callback(const Transfer_t *transfer)
     if (!transfer->driver) return;
     ((JoystickController *)(transfer->driver))->rx_data(transfer);
 }
+
 
 void JoystickController::tx_callback(const Transfer_t *transfer)
 {
@@ -1404,7 +1439,7 @@ void JoystickController::tx_callback(const Transfer_t *transfer)
 
 
 /************************************************************/
-//  Interrupt-based Data Movement
+// Interrupt-based Data Movement
 // XBox one input data when type == 0x20
 // Information came from several places on the web including:
 // https://github.com/quantus/xbox-one-controller-protocol
@@ -1447,7 +1482,7 @@ typedef struct {
 typedef struct {
     // https://www.partsnotincluded.com/understanding-the-xbox-360-wired-controllers-usb-data/
     // https://web.archive.org/web/20171024182650/http://free60.org:80/wiki/GamePad
-    //      Offset      Length (bits)   Description	                    Windows driver
+    //      Offset      Length (bits)   Description                     Windows driver
     //      0x00.0      8               Message type
     //      0x01.0      8               Packet size (20 bytes = 0x14)
     //      0x02.0      1               D-Pad up                        D-Pad up
@@ -1475,10 +1510,10 @@ typedef struct {
     //      0x0e.0      48              Unused
     uint8_t msg_type;
     uint8_t msg_length;
-    uint16_t buttons; // [R3, L3, Back, Start, D_R, D_L, D_D, D_U], [Y, X, B, A, ?, (X), RB, LB]
+    uint16_t buttons;  // [R3, L3, Back, Start, D_R, D_L, D_D, D_U], [Y, X, B, A, ?, (X), RB, LB]
     uint8_t lt;
     uint8_t rt;
-    int16_t axis[4]; // [RY-, RY+], [RX-, RX+], [LY-, LY+], [LX-, LX+]
+    int16_t axis[4];  // [RY-, RY+], [RX-, RX+], [LY-, LY+], [LX-, LX+]
     // bytes 14-19 unused
 } xbox360usbdata_t;
 
@@ -1501,6 +1536,7 @@ typedef struct {
 
 static const uint8_t xbox_axis_order_mapping[] = {3, 4, 0, 1, 2, 5};
 
+
 void JoystickController::rx_data(const Transfer_t *transfer)
 {
 #ifdef  DEBUG_JOYSTICK
@@ -1512,13 +1548,13 @@ void JoystickController::rx_data(const Transfer_t *transfer)
     if (joystickType_ == XBOXONE) {
         // Process XBOX One data
         axis_mask_ = 0x3f;
-        axis_changed_mask_ = 0; // assume none for now
+        axis_changed_mask_ = 0;  // assume none for now
         xbox1data20_t *xb1d = (xbox1data20_t *)transfer->buffer;
         if (xb1d->type == 0x03) {
             queue_Data_Transfer_Debug(txpipe_, xboxone_start_pdp_afterglow, sizeof(xboxone_start_pdp_afterglow), this, __LINE__);
         } else
         if ((xb1d->type == 0x20) && (transfer->length >= sizeof (xbox1data20_t))) {
-            // We have a data transfer.  Lets see what is new...
+            // We have a data transfer. Lets see what is new...
             if (xb1d->buttons != buttons) {
                 buttons = xb1d->buttons;
                 anychange = true;
@@ -1541,11 +1577,11 @@ void JoystickController::rx_data(const Transfer_t *transfer)
         xbox360data_t  *xb360d = (xbox360data_t *)transfer->buffer;
         if (xb360d->state == 0x08) {
             if (xb360d->id_or_type != connected_) {
-                connected_ = xb360d->id_or_type;    // remember it...
+                connected_ = xb360d->id_or_type;  // remember it...
                 if (connected_) {
                     println("XBox360w - Connected type:", connected_, HEX);
                     // rx_ep_ should be 1, 3, 5, 7 for the wireless convert to 2-5 on led
-                    setLEDs(2 + rx_ep_ / 2); // Right now hard coded to first joystick...
+                    setLEDs(2 + rx_ep_ / 2);  // Right now hard coded to first joystick...
 
                 } else {
                     println("XBox360w - disconnected");
@@ -1555,16 +1591,16 @@ void JoystickController::rx_data(const Transfer_t *transfer)
             // Controller status report - Maybe we should save away and allow the user access?
             println("XBox360w - controllerStatus: ", xb360d->controller_status, HEX);
         } else if (xb360d->id_or_type == 0x01) { // Lets only process report 1.
-            //const uint8_t *pbuffer = (uint8_t*)transfer->buffer;
-            //for (uint8_t i = 0; i < transfer->length; i++) DBGPrintf("%02x ", pbuffer[i]);
-            //DBGPrintf("\n");
+            // const uint8_t *pbuffer = (uint8_t*)transfer->buffer;
+            // for (uint8_t i = 0; i < transfer->length; i++) DBGPrintf("%02x ", pbuffer[i]);
+            // DBGPrintf("\n");
 
             if (buttons != xb360d->buttons) {
                 buttons = xb360d->buttons;
                 anychange = true;
             }
             axis_mask_ = 0x3f;
-            axis_changed_mask_ = 0; // assume none for now
+            axis_changed_mask_ = 0;  // assume none for now
 
             for (uint8_t i = 0; i < 4; i++) {
                 if (axis[i] != xb360d->axis[i]) {
@@ -1592,19 +1628,19 @@ void JoystickController::rx_data(const Transfer_t *transfer)
     } else if (joystickType_ == XBOX360USB) {
         xbox360usbdata_t  *xb360usbd = (xbox360usbdata_t *)transfer->buffer;
 
-        if (xb360usbd->msg_type == 0x08) { // Controller Connect/Disconnect
+        if (xb360usbd->msg_type == 0x08) {  // Controller Connect/Disconnect
             if (xb360usbd->msg_length != connected_) {
                 connected_ = true;
                 if (connected_) {
                     println("XBox360usb - Connected");
                     // rx_ep_ should be 1, 3, 5, 7 for the wireless convert to 2-5 on led
-                    setLEDs(0x0A, 0, 0); setLEDs(0x02, 0, 0); // Right now hard coded to first joystick...
-                    // println(rx_ep_); // in my tests this prints 129 (decimal)
+                    setLEDs(0x0A, 0, 0); setLEDs(0x02, 0, 0);  // Right now hard coded to first joystick...
+                    // println(rx_ep_);  // in my tests this prints 129 (decimal)
                 } else {
                     println("XBox360usb - Disconnected");
                 }
             }
-        } else if (xb360usbd->msg_type == 0x00) { // Controller Input Report
+        } else if (xb360usbd->msg_type == 0x00) {  // Controller Input Report
 
             if (buttons != xb360usbd->buttons) {
                 buttons = xb360usbd->buttons;
@@ -1638,10 +1674,10 @@ void JoystickController::rx_data(const Transfer_t *transfer)
 
     } else if (joystickType_ == SWITCH) {
         uint8_t packet[8];
-        if(initialPass_ == true) {
+        if (initialPass_ == true) {
             switch(connectedComplete_pending_) {
                 case 0:
-                    //setup handshake
+                    // setup handshake
                     DBGPrintf("Send Handshake\n");
                     sw_sendCmdUSB(0x02, SW_CMD_TIMEOUT);
                     connectedComplete_pending_ = 1;
@@ -1652,7 +1688,7 @@ void JoystickController::rx_data(const Transfer_t *transfer)
                     connectedComplete_pending_ = 2;
                     break;
                 case 2:
-                    //Send report type
+                    // Send report type
                     DBGPrintf("Enable IMU\n");
                     packet[0] = 0x01;
                     sw_sendSubCmdUSB(0x40, packet, 1);
@@ -1676,14 +1712,14 @@ void JoystickController::rx_data(const Transfer_t *transfer)
             }
         }
         switchdataUSB_t  *switchd = (switchdataUSB_t *)transfer->buffer;
-        //uint32_t cur_buttons = switchd->buttons_l | (switchd->buttons_m << 8) | (switchd->buttons_h << 16);
+        // uint32_t cur_buttons = switchd->buttons_l | (switchd->buttons_m << 8) | (switchd->buttons_h << 16);
         uint16_t cur_buttons = (switchd->buttons_h << 8) | switchd->buttons_l;
         if (buttons != cur_buttons) {
             buttons = cur_buttons;
             anychange = true;
         }
         axis_mask_ = 0x3f;
-        axis_changed_mask_ = 0; // assume none for now
+        axis_changed_mask_ = 0;  // assume none for now
 
         for (uint8_t i = 0; i < 4; i++) {
             if (axis[i] != switchd->axis[i]) {
@@ -1693,10 +1729,10 @@ void JoystickController::rx_data(const Transfer_t *transfer)
             }
         }
 
-        //apply stick calibration
+        // apply stick calibration
         float xout, yout;
         CalcAnalogStick(xout, yout, axis[0], axis[1], true);
-        //Serial.printf("Correctd Left Stick: %f, %f\n", xout , yout);
+        // Serial.printf("Correctd Left Stick: %f, %f\n", xout , yout);
         axis[0] = int(round(xout));
         axis[1] = int(round(yout));
 
@@ -1724,9 +1760,11 @@ void JoystickController::rx_data(const Transfer_t *transfer)
     queue_Data_Transfer_Debug(rxpipe_, rxbuf_, rx_size_, this, __LINE__);
 }
 
+
 void JoystickController::tx_data(const Transfer_t *transfer)
 {
 }
+
 
 void JoystickController::disconnect()
 {
@@ -1749,14 +1787,14 @@ hidclaim_t JoystickController::claim_bluetooth(BluetoothConnection *btconnection
             bool claim_interface = (type == 1) || (remoteName == nullptr);
             if (name_maps_to_joystick_type) {
                 switch (joystickType_) {
-                    //case SWITCH:
+                    // case SWITCH:
                     default:
                         // others will experiment with trying for HID.
                         break;
 
                     case PS3:
                     case PS3_MOTION:
-                        special_process_required = SP_PS3_IDS;      // PS3 maybe needs different IDS.
+                        special_process_required = SP_PS3_IDS;  // PS3 maybe needs different IDS.
                         // fall through
                     case PS4:
                     case XBOXONE:
@@ -1769,34 +1807,35 @@ hidclaim_t JoystickController::claim_bluetooth(BluetoothConnection *btconnection
                 // They are telling me to grab it now. SO say yes
                 USBHDBGSerial.printf("JoystickController::claim_bluetooth Interface\n");
                 btconnect = btconnection;
-                btdevice = (Device_t*)btconnect->btController_; // remember this way
+                btdevice = (Device_t*)btconnect->btController_;  // remember this way
                 btdriver_ = btconnect->btController_;
                 btdriver_->useHIDProtocol(true);
 
                 // Another big hack try calling the connectionComplete to maybe update what reports we are working with
-               // if (name_maps_to_joystick_type) connectionComplete();
+                // if (name_maps_to_joystick_type) connectionComplete();
                 return CLAIM_INTERFACE;
             }
         }
-        return CLAIM_REPORT; // let them know we may be interested if there is a HID REport Descriptor
+        return CLAIM_REPORT;  // let them know we may be interested if there is a HID REport Descriptor
     }
     return CLAIM_NO;
 }
 
+
 bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_t length)
 {
     // Example data from PS4 controller
-    //01 7e 7f 82 84 08 00 00 00 00
-    //   LX LY RX RY BT BT PS LT RT
+    // 01 7e 7f 82 84 08 00 00 00 00
+    //    LX LY RX RY BT BT PS LT RT
     DBGPrintf("JoystickController::process_bluetooth_HID_data: data[0]=%x\n", data[0]);
     // May have to look at this one with other controllers...
     report_id_ = data[0];
 
 
     if (data[0] == 1) {
-        //print("  Joystick Data: ");
+        // print("  Joystick Data: ");
         // print_hexbytes(data, length);
-        if (length > TOTAL_AXIS_COUNT) length = TOTAL_AXIS_COUNT;   // don't overflow arrays...
+        if (length > TOTAL_AXIS_COUNT) length = TOTAL_AXIS_COUNT;  // don't overflow arrays...
         DBGPrintf("  Joystick Data: ");
         for (uint16_t i = 0; i < length; i++) DBGPrintf("%02x ", data[i]);
         DBGPrintf("\r\n");
@@ -1805,7 +1844,7 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
             uint32_t cur_buttons = data[2] | ((uint16_t)data[3] << 8) | ((uint32_t)data[4] << 16);
             if (cur_buttons != buttons) {
                 buttons = cur_buttons;
-                joystickEvent = true;   // something changed.
+                joystickEvent = true;  // something changed.
             }
 
             uint64_t mask = 0x1;
@@ -1815,7 +1854,7 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
                     axis_changed_mask_ |= mask;
                     axis[i] = data[i + 6];
                 }
-                mask <<= 1; // shift down the mask.
+                mask <<= 1;  // shift down the mask.
             }
             if (axis[5] != data[9]) {
                 axis_changed_mask_ |= (1 << 5);
@@ -1833,26 +1872,26 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
             }
 
             // Then rest of data
-            mask = 0x1 << 10;   // setup for other bits
+            mask = 0x1 << 10;  // setup for other bits
             for (uint16_t i = 10; i < length; i++ ) {
                 axis_mask_ |= mask;
                 if (data[i] != axis[i]) {
                     axis_changed_mask_ |= mask;
                     axis[i] = data[i];
                 }
-                mask <<= 1; // shift down the mask.
+                mask <<= 1;  // shift down the mask.
             }
         } else if (joystickType_ == PS3_MOTION) {
             // Quick and dirty PS3_Motion data.
             uint32_t cur_buttons = data[1] | ((uint16_t)data[2] << 8) | ((uint32_t)data[3] << 16);
             if (cur_buttons != buttons) {
                 buttons = cur_buttons;
-                joystickEvent = true;   // something changed.
+                joystickEvent = true;  // something changed.
             }
 
             // Hard to know what is best here. for now just copy raw data over...
             // will do this for now... Format of thought to be data.
-            //  data[1-3] Buttons (mentioned 4 as well but appears to be counter
+            // data[1-3] Buttons (mentioned 4 as well but appears to be counter
             // axis[0-1] data[5] Trigger, Previous trigger value
             // 2-5 Unknown probably place holders for Axis like data for other PS3
             // 6 - Time stamp
@@ -1862,22 +1901,22 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
             // 32 - Temp High
             // 33 - Temp Low (4 bits)  Maybe Magneto x High on other??
             uint64_t mask = 0x1;
-            axis_mask_ = 0; // assume bits 0, 1, 2, 5
+            axis_mask_ = 0;  // assume bits 0, 1, 2, 5
             // Then rest of data
-            mask = 0x1 << 10;   // setup for other bits
+            mask = 0x1 << 10;  // setup for other bits
             for (uint16_t i = 5; i < length; i++ ) {
                 axis_mask_ |= mask;
                 if (data[i] != axis[i - 5]) {
                     axis_changed_mask_ |= mask;
                     axis[i - 5] = data[i];
                 }
-                mask <<= 1; // shift down the mask.
+                mask <<= 1;  // shift down the mask.
             }
 
         } else if (joystickType_ == XBOXONE) {
             // Process XBOX One data
             typedef struct __attribute__ ((packed)) {
-                uint8_t report_type; // 1
+                uint8_t report_type;  // 1
                 int16_t axis[6];
                 uint32_t buttons;
                 // From online references button order:
@@ -1891,10 +1930,10 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
 
             static const uint8_t xbox_bt_axis_order_mapping[] = { 0, 1, 2, 3, 4, 5};
             axis_mask_ = 0x3f;
-            axis_changed_mask_ = 0; // assume none for now
+            axis_changed_mask_ = 0;  // assume none for now
 
             xbox1data20bt_t *xb1d = (xbox1data20bt_t *)data;
-            //if ((xb1d->type == 0x20) && (length >= sizeof (xbox1data20bt_t))) {
+            // if ((xb1d->type == 0x20) && (length >= sizeof (xbox1data20bt_t))) {
                 // We have a data transfer.  Lets see what is new...
                 if (xb1d->buttons != buttons) {
                     buttons = xb1d->buttons;
@@ -1906,7 +1945,7 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
                     // The first two values were unsigned.
                     int axis_value = (i < 4) ? (int)(uint16_t)xb1d->axis[i] : xb1d->axis[i];
 
-                    //DBGPrintf(" axis value [ %d ] = %d \n", i, axis_value);
+                    // DBGPrintf(" axis value [ %d ] = %d \n", i, axis_value);
 
                     if (axis_value != axis[xbox_bt_axis_order_mapping[i]]) {
                         axis[xbox_bt_axis_order_mapping[i]] = axis_value;
@@ -1916,7 +1955,7 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
                 }
 
                 joystickEvent = true;
-            //}
+            // }
 
         } else {
             uint64_t mask = 0x1;
@@ -1928,8 +1967,8 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
                     axis_changed_mask_ |= mask;
                     axis[i] = data[i];
                 }
-                mask <<= 1; // shift down the mask.
-//              DBGPrintf("%02x ", axis[i]);
+                mask <<= 1;  // shift down the mask.
+            //  DBGPrintf("%02x ", axis[i]);
             }
 
         }
@@ -1945,8 +1984,8 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
         axis_mask_ = 0;
         axis_changed_mask_ = 0;
 
-        //This moves data to be equivalent to what we see for
-        //data[0] = 0x01
+        // This moves data to be equivalent to what we see for
+        // data[0] = 0x01
         uint8_t tmp_data[length - 2];
 
         for (uint16_t i = 0; i < (length - 2); i++ ) {
@@ -1972,11 +2011,11 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
          * [30] 0x00,phone,mic, usb, battery level (4bits)
          * rest is trackpad?  to do implement?
          */
-        //PS Bit
+        // PS Bit
         tmp_data[7] = (tmp_data[7] >> 0) & 1;
-        //set arrow buttons to axis[0]
+        // set arrow buttons to axis[0]
         tmp_data[10] = tmp_data[5] & ((1 << 4) - 1);
-        //set buttons for last 4bits in the axis[5]
+        // set buttons for last 4bits in the axis[5]
         tmp_data[5] = tmp_data[5] >> 4;
 
         // Lets try mapping the DPAD buttons to high bits
@@ -1990,7 +2029,7 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
 
         if (cur_buttons != buttons) {
             buttons = cur_buttons;
-            joystickEvent = true;   // something changed.
+            joystickEvent = true;  // something changed.
         }
 
         mask = 0x1;
@@ -2000,7 +2039,7 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
                 axis_changed_mask_ |= mask;
                 axis[i] = tmp_data[i + 1];
             }
-            mask <<= 1; // shift down the mask.
+            mask <<= 1;  // shift down the mask.
         }
         if (axis[5] != tmp_data[4]) {
             axis_changed_mask_ |= (1 << 5);
@@ -2017,7 +2056,7 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
             axis[4] = tmp_data[9];
         }
 
-        //limit for masking
+        // limit for masking
         mask = 0x1;
         for (uint16_t i = 6; i < (64); i++ ) {
             axis_mask_ |= mask;
@@ -2025,11 +2064,11 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
                 axis_changed_mask_ |= mask;
                 axis[i] = tmp_data[i];
             }
-            mask <<= 1; // shift down the mask.
+            mask <<= 1;  // shift down the mask.
             DBGPrintf("%02x ", axis[i]);
         }
         DBGPrintf("\n");
-        //DBGPrintf("Axis Mask (axis_mask_, axis_changed_mask_; %d, %d\n", axis_mask_,axis_changed_mask_);
+        // DBGPrintf("Axis Mask (axis_mask_, axis_changed_mask_; %d, %d\n", axis_mask_,axis_changed_mask_);
         joystickEvent = true;
         connected_ = true;
     } else if (joystickType_ == SWITCH) {
@@ -2050,7 +2089,6 @@ bool JoystickController::process_bluetooth_HID_data(const uint8_t *data, uint16_
 //-----------------------------------------------------------------------------
 bool JoystickController::sw_handle_bt_init_of_joystick(const uint8_t *data, uint16_t length, bool timer_event)
 {
-
     if (data) {
         if (data[0] != 0x21) return false;
         DBGPrintf("Joystick Acknowledge Command Rcvd! pending: %u SC: %x", connectedComplete_pending_, data[14]);
@@ -2066,12 +2104,11 @@ bool JoystickController::sw_handle_bt_init_of_joystick(const uint8_t *data, uint
 
         DBGPrintf("==========> Connection Pending: %d\n",connectedComplete_pending_);
 
-
-        if (!initialPassBT_) return true; // don't need to process
+        if (!initialPassBT_) return true;  // don't need to process
         // Shold maybe double check the right one...
         connectedComplete_pending_++;
     } else if (timer_event) {
-        if (!initialPassBT_) return true; // don't need to process
+        if (!initialPassBT_) return true;  // don't need to process
         DBGPrintf("\t(%u)Timer event - advance\n", (uint32_t)em_sw_);
         connectedComplete_pending_++;
     }
@@ -2133,7 +2170,7 @@ bool JoystickController::sw_handle_bt_init_of_joystick(const uint8_t *data, uint
     case 7:
         DBGPrintf("\nTry to Enable IMU\n");
         packet_[0] = 0x01;
-        sw_sendCmd(0x40, packet_, 1, SW_CMD_TIMEOUT);   /* 0x40 IMU, note: 0x00 would disable */
+        sw_sendCmd(0x40, packet_, 1, SW_CMD_TIMEOUT);  /* 0x40 IMU, note: 0x00 would disable */
         break;
     case 8:
         DBGPrintf("\nTry to Enable Rumble\n");
@@ -2146,7 +2183,7 @@ bool JoystickController::sw_handle_bt_init_of_joystick(const uint8_t *data, uint
         break;
     case 10:
         DBGPrintf("\nSet Report Mode\n");
-        packet_[0] = 0x30; //0x3F;
+        packet_[0] = 0x30;  //0x3F;
         sw_sendCmd(0x03, packet_, 1, SW_CMD_TIMEOUT);
         break;
     case 11:
@@ -2159,6 +2196,7 @@ bool JoystickController::sw_handle_bt_init_of_joystick(const uint8_t *data, uint
     return true;
 }
 
+
 void JoystickController::sw_update_axis(uint8_t axis_index, int new_value)
 {
     if (axis[axis_index] != new_value) {
@@ -2168,11 +2206,12 @@ void JoystickController::sw_update_axis(uint8_t axis_index, int new_value)
     }
 }
 
+
 bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t length)
 {
     if (data[0] == 0x3f) {
         // Assume switch:
-        //<<(02 15 21):48 20 11 00 0D 00 71 00 A1
+        // <<(02 15 21):48 20 11 00 0D 00 71 00 A1
         // 16 bits buttons
         // 4 bits hat
         // 4 bits <constant>
@@ -2181,7 +2220,7 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
         // 16 bits rx
         // 16 bits ry
         typedef struct __attribute__ ((packed)) {
-            uint8_t report_type; // 1
+            uint8_t report_type;  // 1
             uint16_t buttons;
             uint8_t hat;
             int16_t axis[4];
@@ -2196,7 +2235,7 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
 
         static const uint8_t switch_bt_axis_order_mapping[] = { 0, 1, 2, 3};
         axis_mask_ = 0x1ff;
-        axis_changed_mask_ = 0; // assume none for now
+        axis_changed_mask_ = 0;  // assume none for now
 
         switchbt_t *sw1d = (switchbt_t *)data;
         // We have a data transfer.  Lets see what is new...
@@ -2213,13 +2252,13 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
             anychange = true;
         }
 
-        //just a hack for a single joycon.
-        if(buttons == 0x8000) { //ZL
+        // just a hack for a single joycon.
+        if (buttons == 0x8000) {  //ZL
             axis[6] = 1;
         } else {
             axis[6] = 0;
         }
-        if(buttons == 0x8000) {     //ZR
+        if (buttons == 0x8000) {  //ZR
             axis[7] = 1;
         } else {
             axis[7] = 0;
@@ -2230,7 +2269,7 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
             // The first two values were unsigned.
             int axis_value = (uint16_t)sw1d->axis[i];
 
-            //DBGPrintf(" axis value [ %d ] = %d \n", i, axis_value);
+            // DBGPrintf(" axis value [ %d ] = %d \n", i, axis_value);
 
             if (axis_value != axis[switch_bt_axis_order_mapping[i]]) {
                 axis[switch_bt_axis_order_mapping[i]] = axis_value;
@@ -2245,16 +2284,16 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
         // Assume switch full report
         //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48
         // 30 E0 80 00 00 00 D9 37 79 19 98 70 00 0D 0B F1 02 F0 0A 41 FE 25 FC 89 00 F8 0A F0 02 F2 0A 41 FE D9 FB 99 00 D4 0A F6 02 FC 0A 3C FE 69 FB B8 00
-        //<<(02 15 21):48 20 11 00 0D 00 71 00 A1
-        //static const uint8_t switch_bt_axis_order_mapping[] = { 0, 1, 2, 3};
+        // <<(02 15 21):48 20 11 00 0D 00 71 00 A1
+        // static const uint8_t switch_bt_axis_order_mapping[] = { 0, 1, 2, 3};
         axis_mask_ = 0x7fff;  // have all of the fields.
-        axis_changed_mask_ = 0; // assume none for now
+        axis_changed_mask_ = 0;  // assume none for now
         // We have a data transfer.  Lets see what is new...
         uint32_t cur_buttons = data[3] | (data[4] << 8) | (data[5] << 16);
 
-        //DBGPrintf("BUTTONS: %x\n", cur_buttons);
-        if(initialPassButton_ == true) {
-            if(cur_buttons == 0x8000) {
+        // DBGPrintf("BUTTONS: %x\n", cur_buttons);
+        if (initialPassButton_ == true) {
+            if (cur_buttons == 0x8000) {
                 buttonOffset_ = 0x8000;
             } else {
                 buttonOffset_ = 0;
@@ -2263,7 +2302,7 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
         }
 
         cur_buttons = cur_buttons - buttonOffset_;
-        //Serial.printf("Buttons (3,4,5): %x, %x, %x, %x, %x, %x\n", buttonOffset_, cur_buttons, buttons, data[3], data[4], data[5]);
+        // Serial.printf("Buttons (3,4,5): %x, %x, %x, %x, %x, %x\n", buttonOffset_, cur_buttons, buttons, data[3], data[4], data[5]);
 
         if (cur_buttons != buttons) {
             buttons = cur_buttons;
@@ -2281,52 +2320,52 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
         */
 
         uint16_t new_axis[14];
-        //Joystick data
+        // Joystick data
         new_axis[0] = data[6] | ((data[7] & 0xF) << 8);   //xl
         new_axis[1] = (data[7] >> 4) | (data[8] << 4);    //yl
         new_axis[2] = data[9] | ((data[10] & 0xF) << 8);  //xr
         new_axis[3] = (data[10] >> 4) | (data[11] << 4);  //yr
 
-        //Kludge to get trigger buttons tripping
-        if(buttons == 0x40) {   //R1
+        // Kludge to get trigger buttons tripping
+        if (buttons == 0x40) {  // R1
             new_axis[5] = 1;
         } else {
             new_axis[5] = 0;
         }
-        if(buttons == 0x400000) {   //L1
+        if (buttons == 0x400000) {  // L1
             new_axis[4] = 1;
         } else {
             new_axis[4] = 0;
         }
-        if(buttons == 0x400040) {
+        if (buttons == 0x400040) {
             new_axis[4] = 0xff;
             new_axis[5] = 0xff;
         }
-        if(buttons == 0x800000) {   //ZL
+        if (buttons == 0x800000) {  // ZL
             new_axis[6] = 0xff;
         } else {
             new_axis[6] = 0;
         }
-        if(buttons == 0x80) {       //ZR
+        if (buttons == 0x80) {  // ZR
             new_axis[7] = 0xff;
         } else {
             new_axis[7] = 0;
         }
-        if(buttons == 0x800080) {
+        if (buttons == 0x800080) {
             new_axis[6] = 0xff;
             new_axis[7] = 0xff;
         }
 
-        sw_update_axis(8, (int16_t)(data[13]  | (data[14] << 8))); //ax
-        sw_update_axis(9, (int16_t)(data[15]  | (data[16] << 8))); //ay
-        sw_update_axis(10,  (int16_t)(data[17] | (data[18] << 8))); //az
-        sw_update_axis(11,  (int16_t)(data[19] | (data[20] << 8)));  //gx
-        sw_update_axis(12,  (int16_t)(data[21] | (data[22] << 8))); //gy
-        sw_update_axis(13,  (int16_t)(data[23] | (data[24] << 8))); //gz
+        sw_update_axis(8, (int16_t)(data[13]  | (data[14] << 8)));  // ax
+        sw_update_axis(9, (int16_t)(data[15]  | (data[16] << 8)));  // ay
+        sw_update_axis(10,  (int16_t)(data[17] | (data[18] << 8)));  // az
+        sw_update_axis(11,  (int16_t)(data[19] | (data[20] << 8)));  // gx
+        sw_update_axis(12,  (int16_t)(data[21] | (data[22] << 8)));  // gy
+        sw_update_axis(13,  (int16_t)(data[23] | (data[24] << 8)));  // gz
 
-        sw_update_axis(14,  data[2] >> 4);  //Battery level, 8=full, 6=medium, 4=low, 2=critical, 0=empty
+        sw_update_axis(14,  data[2] >> 4);  // Battery level, 8=full, 6=medium, 4=low, 2=critical, 0=empty
 
-        //map axes
+        // map axes
         for (uint8_t i = 0; i < 8; i++) {
             // The first two values were unsigned.
             if (new_axis[i] != axis[i]) {
@@ -2336,10 +2375,10 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
             }
         }
 
-        //apply stick calibration
+        // apply stick calibration
         float xout, yout;
         CalcAnalogStick(xout, yout, new_axis[0], new_axis[1], true);
-        //Serial.printf("Correctd Left Stick: %f, %f\n", xout , yout);
+        // Serial.printf("Correctd Left Stick: %f, %f\n", xout , yout);
         axis[0] = int(round(xout));
         axis[1] = int(round(yout));
 
@@ -2353,6 +2392,7 @@ bool JoystickController::sw_process_HID_data(const uint8_t *data, uint16_t lengt
     }
     return false;
 }
+
 
 hidclaim_t JoystickController::bt_claim_collection(BluetoothConnection *btconnection, uint32_t bluetooth_class, uint32_t topusage)
 {
@@ -2368,32 +2408,37 @@ hidclaim_t JoystickController::bt_claim_collection(BluetoothConnection *btconnec
 
     USBHDBGSerial.printf("\tJoystickController claim collection\n");
     btconnect = btconnection;
-    btdevice = (Device_t*)btconnect->btController_; // remember this way
+    btdevice = (Device_t*)btconnect->btController_;  // remember this way
 
-    // experiment?  See if we can now tell system to maybe set which report we want
+    // experiment? See if we can now tell system to maybe set which report we want
     connectionComplete();
     return CLAIM_REPORT;
 }
+
 
 void JoystickController::bt_hid_input_begin(uint32_t topusage, uint32_t type, int lgmin, int lgmax)
 {
     hid_input_begin(topusage, type, lgmin, lgmax);
 }
 
+
 void JoystickController::bt_hid_input_data(uint32_t usage, int32_t value)
 {
     hid_input_data(usage, value);
 }
+
 
 void JoystickController::bt_hid_input_end()
 {
     hid_input_end();
 }
 
+
 void JoystickController::bt_disconnect_collection(Device_t *dev)
 {
     disconnect_collection(dev);
 }
+
 
 bool JoystickController::mapNameToJoystickType(const uint8_t *remoteName)
 {
@@ -2416,10 +2461,10 @@ bool JoystickController::mapNameToJoystickType(const uint8_t *remoteName)
     } else if (strncmp((const char *)remoteName, "Pro Controller", 13) == 0) {
         DBGPrintf("  JoystickController::mapNameToJoystickType %x %s - set to Nintendo Pro Controller\n", (uint32_t)this, remoteName);
         joystickType_ = SWITCH;
-    } else if(strncmp((const char *)remoteName, "Joy-Con (R)", 11) == 0) {
+    } else if (strncmp((const char *)remoteName, "Joy-Con (R)", 11) == 0) {
         DBGPrintf("  JoystickController::mapNameToJoystickType %x %s - set to Nintendo Joy-Con (R) Controller\n", (uint32_t)this, remoteName);
         joystickType_ = SWITCH;
-    } else if(strncmp((const char *)remoteName, "Joy-Con (L)", 11) == 0) {
+    } else if (strncmp((const char *)remoteName, "Joy-Con (L)", 11) == 0) {
         DBGPrintf("  JoystickController::mapNameToJoystickType %x %s - set to Nintendo Joy-Con (L) Controller\n", (uint32_t)this, remoteName);
         joystickType_ = SWITCH;
     } else {
@@ -2445,6 +2490,7 @@ bool JoystickController::remoteNameComplete(const uint8_t *remoteName)
     return true;
 }
 
+
 void JoystickController::connectionComplete()
 {
     connectedComplete_pending_ = 0;
@@ -2454,8 +2500,8 @@ void JoystickController::connectionComplete()
     case PS4:
     {
         uint8_t packet[2];
-        packet[0] = 0x43; // HID BT Get_report (0x40) | Report Type (Feature 0x03)
-        packet[1] = 0x02; // Report ID
+        packet[0] = 0x43;  // HID BT Get_report (0x40) | Report Type (Feature 0x03)
+        packet[1] = 0x02;  // Report ID
         DBGPrintf("Set PS4 report\n");
         delay(1);
         btdriver_->sendL2CapCommand(packet, sizeof(packet), BluetoothController::CONTROL_SCID /*0x40*/);
@@ -2464,9 +2510,9 @@ void JoystickController::connectionComplete()
     case PS3:
     {
         uint8_t packet[6];
-        packet[0] = 0x53; // HID BT Set_report (0x50) | Report Type (Feature 0x03)
-        packet[1] = 0xF4; // Report ID
-        packet[2] = 0x42; // Special PS3 Controller enable commands
+        packet[0] = 0x53;  // HID BT Set_report (0x50) | Report Type (Feature 0x03)
+        packet[1] = 0xF4;  // Report ID
+        packet[2] = 0x42;  // Special PS3 Controller enable commands
         packet[3] = 0x03;
         packet[4] = 0x00;
         packet[5] = 0x00;
@@ -2477,7 +2523,7 @@ void JoystickController::connectionComplete()
     }
     break;
     case PS3_MOTION:
-        setLEDs(0, 0xff, 0);    // Maybe try setting to green?
+        setLEDs(0, 0xff, 0);  // Maybe try setting to green?
         break;
     case SWITCH:
     {
@@ -2490,19 +2536,17 @@ void JoystickController::connectionComplete()
         connectedComplete_pending_ = 0;
 
         DBGPrintf("Config Complete!\n");
-
-
 #endif
     }
-
     default:
         break;
     }
 }
 
+
 void JoystickController::release_bluetooth()
 {
-    btdevice = nullptr; // remember this way
+    btdevice = nullptr;  // remember this way
     btdriver_ = nullptr;
     connected_ = false;
     special_process_required = false;
@@ -2510,7 +2554,8 @@ void JoystickController::release_bluetooth()
 }
 
 
-bool JoystickController::PS3Pair(uint8_t* bdaddr) {
+bool JoystickController::PS3Pair(uint8_t* bdaddr)
+{
     if (!driver_) return false;
     if (joystickType_ == PS3) {
         /* Set the internal Bluetooth address */
@@ -2518,7 +2563,7 @@ bool JoystickController::PS3Pair(uint8_t* bdaddr) {
         txbuf_[1] = 0x00;
 
         for (uint8_t i = 0; i < 6; i++)
-            txbuf_[i + 2] = bdaddr[5 - i]; // Copy into buffer, has to be written reversed, so it is MSB first
+            txbuf_[i + 2] = bdaddr[5 - i];  // Copy into buffer, has to be written reversed, so it is MSB first
 
         // bmRequest = Host to device (0x00) | Class (0x20) | Interface (0x01) = 0x21, bRequest = Set Report (0x09), Report ID (0xF5), Report Type (Feature 0x03), interface (0x00), datalength, datalength, data
         return driver_->sendControlPacket(0x21, 9, 0x3f5, 0, 8, txbuf_);
@@ -2526,7 +2571,7 @@ bool JoystickController::PS3Pair(uint8_t* bdaddr) {
         // Slightly different than other PS3 units...
         txbuf_[0] = 0x05;
         for (uint8_t i = 0; i < 6; i++)
-            txbuf_[i + 1] = bdaddr[i]; // Order different looks like LSB First?
+            txbuf_[i + 1] = bdaddr[i];  // Order different looks like LSB First?
 
         txbuf_[7] = 0x10;
         txbuf_[8] = 0x01;
@@ -2538,10 +2583,12 @@ bool JoystickController::PS3Pair(uint8_t* bdaddr) {
     return false;
 }
 
+
 //=============================================================================
 // Retrieve the current pairing information for a PS4...
 //=============================================================================
-bool JoystickController::PS4GetCurrentPairing(uint8_t* bdaddr) {
+bool JoystickController::PS4GetCurrentPairing(uint8_t* bdaddr)
+{
     if (!driver_ || (joystickType_ != PS4)) return false;
     // Try asking PS4 for information
     memset(txbuf_, 0, 0x10);
@@ -2554,7 +2601,9 @@ bool JoystickController::PS4GetCurrentPairing(uint8_t* bdaddr) {
     return true;
 }
 
-bool JoystickController::PS4Pair(uint8_t* bdaddr) {
+
+bool JoystickController::PS4Pair(uint8_t* bdaddr)
+{
     if (!driver_ || (joystickType_ != PS4)) return false;
     // Lets try to setup a message to send...
     static const uint8_t ps4_pair_msg[] PROGMEM = {0x13, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -2570,11 +2619,13 @@ bool JoystickController::PS4Pair(uint8_t* bdaddr) {
     return driver_->sendControlPacket(0x21, 0x09, 0x0313, 0, sizeof(ps4_pair_msg), txbuf_);
 }
 
-//Nintendo Switch functions
-void JoystickController::sw_sendCmd(uint8_t cmd, uint8_t *data, uint16_t size, uint32_t timeout) {
+
+// Nintendo Switch functions
+void JoystickController::sw_sendCmd(uint8_t cmd, uint8_t *data, uint16_t size, uint32_t timeout)
+{
     struct SWProBTSendConfigData *packet =  (struct SWProBTSendConfigData *)txbuf_ ;
     memset((void*)packet, 0, sizeof(struct SWProBTSendConfigData));
-    packet->hid_hdr = 0xA2; // HID BT Get_report (0xA0) | Report Type (Output)
+    packet->hid_hdr = 0xA2;  // HID BT Get_report (0xA0) | Report Type (Output)
     packet->id = 1;
     packet->gpnum = switch_packet_num;
     switch_packet_num = (switch_packet_num + 1) & 0x0f;
@@ -2588,8 +2639,8 @@ void JoystickController::sw_sendCmd(uint8_t cmd, uint8_t *data, uint16_t size, u
     packet->rumbleDataR[2] = 0x40;
     packet->rumbleDataR[3] = 0x40;
 
-    packet->subCommand = cmd; // Report ID
-    for(uint16_t i = 0; i < size; i++) {
+    packet->subCommand = cmd;  // Report ID
+    for (uint16_t i = 0; i < size; i++) {
         packet->subCommandData[i] = data[i];
     }
     if (btdriver_) {
@@ -2602,13 +2653,15 @@ void JoystickController::sw_sendCmd(uint8_t cmd, uint8_t *data, uint16_t size, u
     em_sw_ = 0;
 }
 
-void JoystickController::sw_sendCmdUSB(uint8_t cmd, uint32_t timeout) {
+
+void JoystickController::sw_sendCmdUSB(uint8_t cmd, uint32_t timeout)
+{
     DBGPrintf("sw_sendCmdUSB: cmd:%x, timeout:%x\n",  cmd, timeout);
-    //sub-command
+    // sub-command
     txbuf_[0] = 0x80;
     txbuf_[1] = cmd;
-    sw_last_cmd_sent_ = cmd; // remember which command we sent
-    if(driver_) {
+    sw_last_cmd_sent_ = cmd;  // remember which command we sent
+    if (driver_) {
         if (timeout != 0) {
             driver_->startTimer(timeout);
         }
@@ -2621,7 +2674,9 @@ void JoystickController::sw_sendCmdUSB(uint8_t cmd, uint32_t timeout) {
     }
 }
 
-void JoystickController::sw_sendSubCmdUSB(uint8_t sub_cmd, uint8_t *data, uint8_t size, uint32_t timeout) {
+
+void JoystickController::sw_sendSubCmdUSB(uint8_t sub_cmd, uint8_t *data, uint8_t size, uint32_t timeout)
+{
         DBGPrintf("sw_sendSubCmdUSB(%x, %p, %u): ",  sub_cmd, size);
         for (uint8_t i = 0; i < size; i++) DBGPrintf(" %02x", data[i]);
         DBGPrintf("\n");
@@ -2630,28 +2685,28 @@ void JoystickController::sw_sendSubCmdUSB(uint8_t sub_cmd, uint8_t *data, uint8_
         txbuf_[0] = 0x01;
         // Now add in subcommand data:
         // Probably do this better soon
-        txbuf_[ 1] = switch_packet_num = (switch_packet_num + 1) & 0x0f; //
+        txbuf_[1] = switch_packet_num = (switch_packet_num + 1) & 0x0f;  //
 
-        txbuf_[ 2] = 0x00;
-        txbuf_[ 3] = 0x01;
-        txbuf_[ 4] = 0x40;
-        txbuf_[ 5] = 0x40;
-        txbuf_[ 6] = 0x00;
-        txbuf_[ 7] = 0x01;
-        txbuf_[ 8] = 0x40;
-        txbuf_[ 9] = 0x40;
+        txbuf_[2] = 0x00;
+        txbuf_[3] = 0x01;
+        txbuf_[4] = 0x40;
+        txbuf_[5] = 0x40;
+        txbuf_[6] = 0x00;
+        txbuf_[7] = 0x01;
+        txbuf_[8] = 0x40;
+        txbuf_[9] = 0x40;
 
-        txbuf_[ 10] = sub_cmd;
+        txbuf_[10] = sub_cmd;
 
-        //sub-command
-        for(uint16_t i = 0; i < size; i++) {
+        // sub-command
+        for (uint16_t i = 0; i < size; i++) {
             txbuf_[i + 11] = data[i];
         }
 
         println("USB send sub cmd: driver? ", (uint32_t)driver_, HEX);
         print_hexbytes((uint8_t*)txbuf_, 32);
 
-        if(driver_) {
+        if (driver_) {
             driver_->sendPacket(txbuf_, 32);
             if (timeout != 0) {
                 driver_->startTimer(timeout);
@@ -2665,37 +2720,38 @@ void JoystickController::sw_sendSubCmdUSB(uint8_t sub_cmd, uint8_t *data, uint8_
         if (!timeout) delay(100);
 }
 
+
 void JoystickController::sw_parseAckMsg(const uint8_t *buf_)
 {
     int16_t data[6];
     uint8_t offset = 20;
     uint8_t icount = 0;
-    //uint8_t packet_[8];
+    // uint8_t packet_[8];
 
-    if((buf_[14] == 0x10 && buf_[15] == 0x20 && buf_[16] == 0x60)) {
-        //parse IMU calibration
+    if ((buf_[14] == 0x10 && buf_[15] == 0x20 && buf_[16] == 0x60)) {
+        // parse IMU calibration
         DBGPrintf("===>  IMU Calibration \n");
-        for(uint8_t i = 0; i < 3; i++) {
+        for (uint8_t i = 0; i < 3; i++) {
             SWIMUCal.acc_offset[i] = (int16_t)(buf_[icount+offset] | (buf_[icount+offset+1] << 8));
             SWIMUCal.acc_sensitivity[i] = (int16_t)(buf_[icount+offset+6] | (buf_[icount+offset+1+6] << 8));
             SWIMUCal.gyro_offset[i] = (int16_t)(buf_[icount+offset+12] | (buf_[icount+offset+1+12] << 8));
             SWIMUCal.gyro_sensitivity[i] = (int16_t)(buf_[icount+offset+18] | (buf_[icount+offset+1+18] << 8));
             icount = i * 2;
         }
-        for(uint8_t i = 0; i < 3; i++) {
+        for (uint8_t i = 0; i < 3; i++) {
             DBGPrintf("\t %d, %d, %d, %d\n", SWIMUCal.acc_offset[i], SWIMUCal.acc_sensitivity[i],
                 SWIMUCal.gyro_offset[i], SWIMUCal.gyro_sensitivity[i]);
         }
-    } else if((buf_[14] == 0x10 && buf_[15] == 0x80 && buf_[16] == 0x60)) {
-        //parse IMU calibration
+    } else if ((buf_[14] == 0x10 && buf_[15] == 0x80 && buf_[16] == 0x60)) {
+        // parse IMU calibration
         DBGPrintf("===>  IMU Calibration Offsets \n");
-        for(uint8_t i = 0; i < 3; i++) {
+        for (uint8_t i = 0; i < 3; i++) {
             SWIMUCal.acc_offset[i] = (int16_t)(buf_[i+offset] | (buf_[i+offset+1] << 8));
         }
-        for(uint8_t i = 0; i < 3; i++) {
+        for (uint8_t i = 0; i < 3; i++) {
             DBGPrintf("\t %d\n", SWIMUCal.acc_offset[i]);
         }
-    } else if((buf_[14] == 0x10 && buf_[15] == 0x3D && buf_[16] == 0x60)){		//left stick
+    } else if ((buf_[14] == 0x10 && buf_[15] == 0x3D && buf_[16] == 0x60)) {  //left stick
         offset = 20;
         data[0] = ((buf_[1+offset] << 8) & 0xF00) | buf_[0+offset];
         data[1] = (buf_[2+offset] << 4) | (buf_[1+offset] >> 4);
@@ -2716,7 +2772,7 @@ void JoystickController::sw_parseAckMsg(const uint8_t *buf_)
         DBGPrintf("min/max x: %d, %d\n", SWStickCal.lstick_x_min, SWStickCal.lstick_x_max);
         DBGPrintf("min/max y: %d, %d\n", SWStickCal.lstick_y_min, SWStickCal.lstick_y_max);
 
-        //right stick
+        // right stick
         offset = 29;
         data[0] = ((buf_[1+offset] << 8) & 0xF00) | buf_[0+offset];
         data[1] = (buf_[2+offset] << 4) | (buf_[1+offset] >> 4);
@@ -2736,27 +2792,27 @@ void JoystickController::sw_parseAckMsg(const uint8_t *buf_)
         DBGPrintf("center: %d, %d\n", SWStickCal.rstick_center_x, SWStickCal.rstick_center_y );
         DBGPrintf("min/max x: %d, %d\n", SWStickCal.rstick_x_min, SWStickCal.rstick_x_max);
         DBGPrintf("min/max y: %d, %d\n", SWStickCal.rstick_y_min, SWStickCal.rstick_y_max);
-    }  else if((buf_[14] == 0x10 && buf_[15] == 0x86 && buf_[16] == 0x60)){			//left stick deadzone_left
+    } else if ((buf_[14] == 0x10 && buf_[15] == 0x86 && buf_[16] == 0x60)) {  // left stick deadzone_left
         offset = 20;
         SWStickCal.deadzone_left = (((buf_[4 + offset] << 8) & 0xF00) | buf_[3 + offset]);
         DBGPrintf("\nLeft Stick Deadzone\n");
         DBGPrintf("deadzone: %d\n", SWStickCal.deadzone_left);
-    }   else if((buf_[14] == 0x10 && buf_[15] == 0x98 && buf_[16] == 0x60)){			//left stick deadzone_left
+    } else if ((buf_[14] == 0x10 && buf_[15] == 0x98 && buf_[16] == 0x60)) {  // left stick deadzone_left
         offset = 20;
         SWStickCal.deadzone_left = (((buf_[4 + offset] << 8) & 0xF00) | buf_[3 + offset]);
         DBGPrintf("\nRight Stick Deadzone\n");
         DBGPrintf("deadzone: %d\n", SWStickCal.deadzone_right);
-    } else if((buf_[14] == 0x10 && buf_[15] == 0x10 && buf_[16] == 0x80)){
+    } else if ((buf_[14] == 0x10 && buf_[15] == 0x10 && buf_[16] == 0x80)) {
         DBGPrintf("\nUser Calibration Rcvd!\n");
     }
-
 }
+
 
 bool JoystickController::sw_getIMUCalValues(float *accel, float *gyro)
 {
     // Fail if we don't have actually have those fields. We need axis 8-13 for this
     if ((axis_mask_ & 0x3f00) != 0x3f00) return false;
-    for(uint8_t i = 0; i < 3; i++) {
+    for (uint8_t i = 0; i < 3; i++) {
         accel[i] = (float)(axis[8+i] - SWIMUCal.acc_offset[i]) * (1.0f / (float)SWIMUCal.acc_sensitivity[i]) * 4.0f;
         gyro[i]  = (float)(axis[11+i] - SWIMUCal.gyro_offset[i]) * (816.0f / (float)SWIMUCal.gyro_sensitivity[i]);
     }
@@ -2767,23 +2823,24 @@ bool JoystickController::sw_getIMUCalValues(float *accel, float *gyro)
 #define sw_scale 2048
 void JoystickController::CalcAnalogStick
 (
-    float &pOutX,       // out: resulting stick X value
-    float &pOutY,       // out: resulting stick Y value
-    int16_t x,         // in: initial stick X value
-    int16_t y,         // in: initial stick Y value
-    bool isLeft			// are we dealing with left or right Joystick
+    float &pOutX,  // out: resulting stick X value
+    float &pOutY,  // out: resulting stick Y value
+    int16_t x,     // in: initial stick X value
+    int16_t y,     // in: initial stick Y value
+    bool isLeft    // are we dealing with left or right Joystick
 )
 {
-//		uint16_t x_calc[3],      // calc -X, CenterX, +X
-//		uint16_t y_calc[3]       // calc -Y, CenterY, +Y
+    // uint16_t x_calc[3],  // calc -X, CenterX, +X
+    // uint16_t y_calc[3]   // calc -Y, CenterY, +Y
 
     int16_t min_x;
     int16_t max_x;
     int16_t center_x;
-    int16_t min_y;		// analog joystick calibration
+    int16_t min_y;  // analog joystick calibration
     int16_t max_y;
     int16_t center_y;
-    if(isLeft) {
+
+    if (isLeft) {
         min_x = SWStickCal.lstick_x_min;
         max_x = SWStickCal.lstick_x_max;
         center_x = SWStickCal.lstick_center_x;
@@ -2798,7 +2855,6 @@ void JoystickController::CalcAnalogStick
         max_y = SWStickCal.rstick_y_max;
         center_y = SWStickCal.rstick_center_y;
     }
-
 
     float x_f, y_f;
     // Apply Joy-Con center deadzone. 0xAE translates approx to 15%. Pro controller has a 10% () deadzone
@@ -2834,6 +2890,4 @@ void JoystickController::CalcAnalogStick
         pOutX = 0.0f;
         pOutY = 0.0f;
     }
-
-
 }
