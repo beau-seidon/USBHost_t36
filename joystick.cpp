@@ -70,16 +70,23 @@ void print_rx_data(uint8_t *ptr, uint32_t len)
 // The others are used after claim-hid code to know which one we have and to use it for
 // doing other features.
 JoystickController::product_vendor_mapping_t JoystickController::pid_vid_mapping[] = {
-    {0x057e, 0x2009, SWITCH, true},  // Switch Pro controller.  // Let the swtich grab it, but...
-    {0x0079, 0x201c, SWITCH, false},
     {0x054c, 0x0268, PS3, true},
     {0x054c, 0x042f, PS3, true},  // PS3 Navigation controller
+
     {0x054c, 0x03d5, PS3_MOTION, true},  // PS3 Motion controller
+
     {0x054c, 0x05c4, PS4, true},
     {0x054C, 0x09CC, PS4, true},
     {0x0a5c, 0x21e8, PS4, true},
+
     {0x046d, 0xc626, SpaceNav, true},  // 3d Connextion Space Navigator, 0x10008
     {0x046d, 0xc628, SpaceNav, true},  // 3d Connextion Space Navigator, 0x10008
+
+    {0x0079, 0x201c, SWITCH, false},
+    {0x057e, 0x2009, SWITCH, true},  // Switch Pro controller.  // Let the swtich grab it, but...
+
+    {0x0810, 0xe501, SNES, true},  // INNEXT SNES USB gamepad
+
 
 // stolen from https://github.com/torvalds/linux/blob/master/drivers/input/joystick/xpad.c#L134
     /* Please keep this list sorted by vendor and product ID. */
@@ -92,17 +99,17 @@ JoystickController::product_vendor_mapping_t JoystickController::pid_vid_mapping
     {0x03f0, 0x07a0, XBOXONE, false},     // "HyperX Clutch Gladiate RGB",                                0,                                    XTYPE_XBOXONE
     {0x03f0, 0x08b6, XBOXONE, false},     // "HyperX Clutch Gladiate (v2)",                               MAP_SHARE_BUTTON,                     XTYPE_XBOXONE
     {0x03f0, 0x09b4, XBOXONE, false},     // "HyperX Clutch Tanto",                                       0,                                    XTYPE_XBOXONE
-    // {0x044f, 0x0f00, XBOX, false},     // "Thrustmaster Wheel",                                        0,                                    XTYPE_XBOX
-    // {0x044f, 0x0f03, XBOX, false},     // "Thrustmaster Wheel",                                        0,                                    XTYPE_XBOX
-    // {0x044f, 0x0f07, XBOX, false},     // "Thrustmaster, Inc. Controller",                             0,                                    XTYPE_XBOX
-    // {0x044f, 0x0f10, XBOX, false},     // "Thrustmaster Modena GT Wheel",                              0,                                    XTYPE_XBOX
+    {0x044f, 0x0f00, XBOX, false},     // "Thrustmaster Wheel",                                        0,                                    XTYPE_XBOX
+    {0x044f, 0x0f03, XBOX, false},     // "Thrustmaster Wheel",                                        0,                                    XTYPE_XBOX
+    {0x044f, 0x0f07, XBOX, false},     // "Thrustmaster, Inc. Controller",                             0,                                    XTYPE_XBOX
+    {0x044f, 0x0f10, XBOX, false},     // "Thrustmaster Modena GT Wheel",                              0,                                    XTYPE_XBOX
     {0x044f, 0xb326, XBOX360USB, false},  // "Thrustmaster Gamepad GP XID",                               0,                                    XTYPE_XBOX360
     {0x044f, 0xd01e, XBOXONE, false},     // "ThrustMaster, Inc. ESWAP X 2 ELDEN RING EDITION",           0,                                    XTYPE_XBOXONE
-    // {0x045e, 0x0202, XBOX, false},     // "Microsoft X-Box pad v1 (US)",                               0,                                    XTYPE_XBOX
-    // {0x045e, 0x0285, XBOX, false},     // "Microsoft X-Box pad (Japan)",                               0,                                    XTYPE_XBOX
-    // {0x045e, 0x0287, XBOX, false},     // "Microsoft Xbox Controller S",                               0,                                    XTYPE_XBOX
-    // {0x045e, 0x0288, XBOX, false},     // "Microsoft Xbox Controller S v2",                            0,                                    XTYPE_XBOX
-    // {0x045e, 0x0289, XBOX, false},     // "Microsoft X-Box pad v2 (US)",                               0,                                    XTYPE_XBOX
+    {0x045e, 0x0202, XBOX, false},     // "Microsoft X-Box pad v1 (US)",                               0,                                    XTYPE_XBOX
+    {0x045e, 0x0285, XBOX, false},     // "Microsoft X-Box pad (Japan)",                               0,                                    XTYPE_XBOX
+    {0x045e, 0x0287, XBOX, false},     // "Microsoft Xbox Controller S",                               0,                                    XTYPE_XBOX
+    {0x045e, 0x0288, XBOX, false},     // "Microsoft Xbox Controller S v2",                            0,                                    XTYPE_XBOX
+    {0x045e, 0x0289, XBOX, false},     // "Microsoft X-Box pad v2 (US)",                               0,                                    XTYPE_XBOX
     {0x045e, 0x028e, XBOX360USB, false},  // "Microsoft X-Box 360 pad",                                   0,                                    XTYPE_XBOX360
     {0x045e, 0x028f, XBOX360USB, false},  // "Microsoft X-Box 360 pad v2",                                0,                                    XTYPE_XBOX360
     {0x045e, 0x0291, XBOX360W, false},    // "Xbox 360 Wireless Receiver (XBOX)",                         MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX360W
@@ -119,33 +126,33 @@ JoystickController::product_vendor_mapping_t JoystickController::pid_vid_mapping
     {0x046d, 0xc21e, XBOX360USB, false},  // "Logitech Gamepad F510",                                     0,                                    XTYPE_XBOX360
     {0x046d, 0xc21f, XBOX360USB, false},  // "Logitech Gamepad F710",                                     0,                                    XTYPE_XBOX360
     {0x046d, 0xc242, XBOX360USB, false},  // "Logitech Chillstream Controller",                           0,                                    XTYPE_XBOX360
-    // {0x046d, 0xca84, XBOX, false},     // "Logitech Xbox Cordless Controller",                         0,                                    XTYPE_XBOX
-    // {0x046d, 0xca88, XBOX, false},     // "Logitech Compact Controller for Xbox",                      0,                                    XTYPE_XBOX
-    // {0x046d, 0xca8a, XBOX, false},     // "Logitech Precision Vibration Feedback Wheel",               0,                                    XTYPE_XBOX
+    {0x046d, 0xca84, XBOX, false},     // "Logitech Xbox Cordless Controller",                         0,                                    XTYPE_XBOX
+    {0x046d, 0xca88, XBOX, false},     // "Logitech Compact Controller for Xbox",                      0,                                    XTYPE_XBOX
+    {0x046d, 0xca8a, XBOX, false},     // "Logitech Precision Vibration Feedback Wheel",               0,                                    XTYPE_XBOX
     {0x046d, 0xcaa3, XBOX360USB, false},  // "Logitech DriveFx Racing Wheel",                             0,                                    XTYPE_XBOX360
     {0x056e, 0x2004, XBOX360USB, false},  // "Elecom JC-U3613M",                                          0,                                    XTYPE_XBOX360
-    // {0x05fd, 0x1007, XBOX, false},     // "Mad Catz Controller (unverified)",                          0,                                    XTYPE_XBOX
-    // {0x05fd, 0x107a, XBOX, false},     // "InterAct 'PowerPad Pro' X-Box pad (Germany)",               0,                                    XTYPE_XBOX
-    // {0x05fe, 0x3030, XBOX, false},     // "Chic Controller",                                           0,                                    XTYPE_XBOX
-    // {0x05fe, 0x3031, XBOX, false},     // "Chic Controller",                                           0,                                    XTYPE_XBOX
-    // {0x062a, 0x0020, XBOX, false},     // "Logic3 Xbox GamePad",                                       0,                                    XTYPE_XBOX
-    // {0x062a, 0x0033, XBOX, false},     // "Competition Pro Steering Wheel",                            0,                                    XTYPE_XBOX
-    // {0x06a3, 0x0200, XBOX, false},     // "Saitek Racing Wheel",                                       0,                                    XTYPE_XBOX
-    // {0x06a3, 0x0201, XBOX, false},     // "Saitek Adrenalin",                                          0,                                    XTYPE_XBOX
+    {0x05fd, 0x1007, XBOX, false},     // "Mad Catz Controller (unverified)",                          0,                                    XTYPE_XBOX
+    {0x05fd, 0x107a, XBOX, false},     // "InterAct 'PowerPad Pro' X-Box pad (Germany)",               0,                                    XTYPE_XBOX
+    {0x05fe, 0x3030, XBOX, false},     // "Chic Controller",                                           0,                                    XTYPE_XBOX
+    {0x05fe, 0x3031, XBOX, false},     // "Chic Controller",                                           0,                                    XTYPE_XBOX
+    {0x062a, 0x0020, XBOX, false},     // "Logic3 Xbox GamePad",                                       0,                                    XTYPE_XBOX
+    {0x062a, 0x0033, XBOX, false},     // "Competition Pro Steering Wheel",                            0,                                    XTYPE_XBOX
+    {0x06a3, 0x0200, XBOX, false},     // "Saitek Racing Wheel",                                       0,                                    XTYPE_XBOX
+    {0x06a3, 0x0201, XBOX, false},     // "Saitek Adrenalin",                                          0,                                    XTYPE_XBOX
     {0x06a3, 0xf51a, XBOX360USB, false},  // "Saitek P3600",                                              0,                                    XTYPE_XBOX360
     {0x0738, 0x4503, XBOXONE, false},     // "Mad Catz Racing Wheel",                                     0,                                    XTYPE_XBOXONE
-    // {0x0738, 0x4506, XBOX, false},     // "Mad Catz 4506 Wireless Controller",                         0,                                    XTYPE_XBOX
-    // {0x0738, 0x4516, XBOX, false},     // "Mad Catz Control Pad",                                      0,                                    XTYPE_XBOX
-    // {0x0738, 0x4520, XBOX, false},     // "Mad Catz Control Pad Pro",                                  0,                                    XTYPE_XBOX
-    // {0x0738, 0x4522, XBOX, false},     // "Mad Catz LumiCON",                                          0,                                    XTYPE_XBOX
-    // {0x0738, 0x4526, XBOX, false},     // "Mad Catz Control Pad Pro",                                  0,                                    XTYPE_XBOX
-    // {0x0738, 0x4530, XBOX, false},     // "Mad Catz Universal MC2 Racing Wheel and Pedals",            0,                                    XTYPE_XBOX
-    // {0x0738, 0x4536, XBOX, false},     // "Mad Catz MicroCON",                                         0,                                    XTYPE_XBOX
-    // {0x0738, 0x4540, XBOX, false},     // "Mad Catz Beat Pad",                                         MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
-    // {0x0738, 0x4556, XBOX, false},     // "Mad Catz Lynx Wireless Controller",                         0,                                    XTYPE_XBOX
-    // {0x0738, 0x4586, XBOX, false},     // "Mad Catz MicroCon Wireless Controller",                     0,                                    XTYPE_XBOX
-    // {0x0738, 0x4588, XBOX, false},     // "Mad Catz Blaster",                                          0,                                    XTYPE_XBOX
-    // {0x0738, 0x45ff, XBOX, false},     // "Mad Catz Beat Pad (w/ Handle)",                             MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
+    {0x0738, 0x4506, XBOX, false},     // "Mad Catz 4506 Wireless Controller",                         0,                                    XTYPE_XBOX
+    {0x0738, 0x4516, XBOX, false},     // "Mad Catz Control Pad",                                      0,                                    XTYPE_XBOX
+    {0x0738, 0x4520, XBOX, false},     // "Mad Catz Control Pad Pro",                                  0,                                    XTYPE_XBOX
+    {0x0738, 0x4522, XBOX, false},     // "Mad Catz LumiCON",                                          0,                                    XTYPE_XBOX
+    {0x0738, 0x4526, XBOX, false},     // "Mad Catz Control Pad Pro",                                  0,                                    XTYPE_XBOX
+    {0x0738, 0x4530, XBOX, false},     // "Mad Catz Universal MC2 Racing Wheel and Pedals",            0,                                    XTYPE_XBOX
+    {0x0738, 0x4536, XBOX, false},     // "Mad Catz MicroCON",                                         0,                                    XTYPE_XBOX
+    {0x0738, 0x4540, XBOX, false},     // "Mad Catz Beat Pad",                                         MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
+    {0x0738, 0x4556, XBOX, false},     // "Mad Catz Lynx Wireless Controller",                         0,                                    XTYPE_XBOX
+    {0x0738, 0x4586, XBOX, false},     // "Mad Catz MicroCon Wireless Controller",                     0,                                    XTYPE_XBOX
+    {0x0738, 0x4588, XBOX, false},     // "Mad Catz Blaster",                                          0,                                    XTYPE_XBOX
+    {0x0738, 0x45ff, XBOX, false},     // "Mad Catz Beat Pad (w/ Handle)",                             MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
     {0x0738, 0x4716, XBOX360USB, false},  // "Mad Catz Wired Xbox 360 Controller",                        0,                                    XTYPE_XBOX360
     {0x0738, 0x4718, XBOX360USB, false},  // "Mad Catz Street Fighter IV FightStick SE",                  0,                                    XTYPE_XBOX360
     {0x0738, 0x4726, XBOX360USB, false},  // "Mad Catz Xbox 360 Controller",                              0,                                    XTYPE_XBOX360
@@ -153,10 +160,10 @@ JoystickController::product_vendor_mapping_t JoystickController::pid_vid_mapping
     {0x0738, 0x4736, XBOX360USB, false},  // "Mad Catz MicroCon Gamepad",                                 0,                                    XTYPE_XBOX360
     {0x0738, 0x4738, XBOX360USB, false},  // "Mad Catz Wired Xbox 360 Controller (SFIV)",                 MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
     {0x0738, 0x4740, XBOX360USB, false},  // "Mad Catz Beat Pad",                                         0,                                    XTYPE_XBOX360
-    // {0x0738, 0x4743, XBOX, false},     // "Mad Catz Beat Pad Pro",                                     MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
+    {0x0738, 0x4743, XBOX, false},     // "Mad Catz Beat Pad Pro",                                     MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
     {0x0738, 0x4758, XBOX360USB, false},  // "Mad Catz Arcade Game Stick",                                MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
     {0x0738, 0x4a01, XBOXONE, false},     // "Mad Catz FightStick TE 2",                                  MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOXONE
-    // {0x0738, 0x6040, XBOX, false},     // "Mad Catz Beat Pad Pro",                                     MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
+    {0x0738, 0x6040, XBOX, false},     // "Mad Catz Beat Pad Pro",                                     MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
     {0x0738, 0x9871, XBOX360USB, false},  // "Mad Catz Portable Drum",                                    0,                                    XTYPE_XBOX360
     {0x0738, 0xb726, XBOX360USB, false},  // "Mad Catz Xbox controller - MW2",                            0,                                    XTYPE_XBOX360
     {0x0738, 0xb738, XBOX360USB, false},  // "Mad Catz MVC2TE Stick 2",                                   MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
@@ -168,23 +175,23 @@ JoystickController::product_vendor_mapping_t JoystickController::pid_vid_mapping
     {0x07ff, 0xffff, XBOX360USB, false},  // "Mad Catz GamePad",                                          0,                                    XTYPE_XBOX360
     {0x0b05, 0x1a38, XBOXONE, false},     // "ASUS ROG RAIKIRI",                                          MAP_SHARE_BUTTON,                     XTYPE_XBOXONE
     {0x0b05, 0x1abb, XBOXONE, false},     // "ASUS ROG RAIKIRI PRO",                                      0,                                    XTYPE_XBOXONE
-    // {0x0c12, 0x0005, XBOX, false},     // "Intec wireless",                                            0,                                    XTYPE_XBOX
-    // {0x0c12, 0x8801, XBOX, false},     // "Nyko Xbox Controller",                                      0,                                    XTYPE_XBOX
-    // {0x0c12, 0x8802, XBOX, false},     // "Zeroplus Xbox Controller",                                  0,                                    XTYPE_XBOX
-    // {0x0c12, 0x8809, XBOX, false},     // "RedOctane Xbox Dance Pad",                                  DANCEPAD_MAP_CONFIG,                  XTYPE_XBOX
-    // {0x0c12, 0x880a, XBOX, false},     // "Pelican Eclipse PL-2023",                                   0,                                    XTYPE_XBOX
-    // {0x0c12, 0x8810, XBOX, false},     // "Zeroplus Xbox Controller",                                  0,                                    XTYPE_XBOX
-    // {0x0c12, 0x9902, XBOX, false},     // "HAMA VibraX - *FAULTY HARDWARE*",                           0,                                    XTYPE_XBOX
-    // {0x0d2f, 0x0002, XBOX, false},     // "Andamiro Pump It Up pad",                                   MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
+    {0x0c12, 0x0005, XBOX, false},     // "Intec wireless",                                            0,                                    XTYPE_XBOX
+    {0x0c12, 0x8801, XBOX, false},     // "Nyko Xbox Controller",                                      0,                                    XTYPE_XBOX
+    {0x0c12, 0x8802, XBOX, false},     // "Zeroplus Xbox Controller",                                  0,                                    XTYPE_XBOX
+    {0x0c12, 0x8809, XBOX, false},     // "RedOctane Xbox Dance Pad",                                  DANCEPAD_MAP_CONFIG,                  XTYPE_XBOX
+    {0x0c12, 0x880a, XBOX, false},     // "Pelican Eclipse PL-2023",                                   0,                                    XTYPE_XBOX
+    {0x0c12, 0x8810, XBOX, false},     // "Zeroplus Xbox Controller",                                  0,                                    XTYPE_XBOX
+    {0x0c12, 0x9902, XBOX, false},     // "HAMA VibraX - *FAULTY HARDWARE*",                           0,                                    XTYPE_XBOX
+    {0x0d2f, 0x0002, XBOX, false},     // "Andamiro Pump It Up pad",                                   MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
     {0x0db0, 0x1901, XBOX360USB, false},  // "Micro Star International Xbox360 Controller for Windows",   0,                                    XTYPE_XBOX360
-    // {0x0e4c, 0x1097, XBOX, false},     // "Radica Gamester Controller",                                0,                                    XTYPE_XBOX
-    // {0x0e4c, 0x1103, XBOX, false},     // "Radica Gamester Reflex",                                    MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX
-    // {0x0e4c, 0x2390, XBOX, false},     // "Radica Games Jtech Controller",                             0,                                    XTYPE_XBOX
-    // {0x0e4c, 0x3510, XBOX, false},     // "Radica Gamester",                                           0,                                    XTYPE_XBOX
-    // {0x0e6f, 0x0003, XBOX, false},     // "Logic3 Freebird wireless Controller",                       0,                                    XTYPE_XBOX
-    // {0x0e6f, 0x0005, XBOX, false},     // "Eclipse wireless Controller",                               0,                                    XTYPE_XBOX
-    // {0x0e6f, 0x0006, XBOX, false},     // "Edge wireless Controller",                                  0,                                    XTYPE_XBOX
-    // {0x0e6f, 0x0008, XBOX, false},     // "After Glow Pro Controller",                                 0,                                    XTYPE_XBOX
+    {0x0e4c, 0x1097, XBOX, false},     // "Radica Gamester Controller",                                0,                                    XTYPE_XBOX
+    {0x0e4c, 0x1103, XBOX, false},     // "Radica Gamester Reflex",                                    MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX
+    {0x0e4c, 0x2390, XBOX, false},     // "Radica Games Jtech Controller",                             0,                                    XTYPE_XBOX
+    {0x0e4c, 0x3510, XBOX, false},     // "Radica Gamester",                                           0,                                    XTYPE_XBOX
+    {0x0e6f, 0x0003, XBOX, false},     // "Logic3 Freebird wireless Controller",                       0,                                    XTYPE_XBOX
+    {0x0e6f, 0x0005, XBOX, false},     // "Eclipse wireless Controller",                               0,                                    XTYPE_XBOX
+    {0x0e6f, 0x0006, XBOX, false},     // "Edge wireless Controller",                                  0,                                    XTYPE_XBOX
+    {0x0e6f, 0x0008, XBOX, false},     // "After Glow Pro Controller",                                 0,                                    XTYPE_XBOX
     {0x0e6f, 0x0105, XBOX360USB, false},  // "HSM3 Xbox360 dancepad",                                     MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX360
     {0x0e6f, 0x0113, XBOX360USB, false},  // "Afterglow AX.1 Gamepad for Xbox 360",                       0,                                    XTYPE_XBOX360
     {0x0e6f, 0x011f, XBOX360USB, false},  // "Rock Candy Gamepad Wired Controller",                       0,                                    XTYPE_XBOX360
@@ -222,8 +229,8 @@ JoystickController::product_vendor_mapping_t JoystickController::pid_vid_mapping
     {0x0e6f, 0x0413, XBOX360USB, false},  // "Afterglow AX.1 Gamepad for Xbox 360",                       0,                                    XTYPE_XBOX360
     {0x0e6f, 0x0501, XBOX360USB, false},  // "PDP Xbox 360 Controller",                                   0,                                    XTYPE_XBOX360
     {0x0e6f, 0xf900, XBOX360USB, false},  // "PDP Afterglow AX.1",                                        0,                                    XTYPE_XBOX360
-    // {0x0e8f, 0x0201, XBOX, false},     // "SmartJoy Frag Xpad/PS2 adaptor",                            0,                                    XTYPE_XBOX
-    // {0x0e8f, 0x3008, XBOX, false},     // "Generic xbox control (dealextreme)",                        0,                                    XTYPE_XBOX
+    {0x0e8f, 0x0201, XBOX, false},     // "SmartJoy Frag Xpad/PS2 adaptor",                            0,                                    XTYPE_XBOX
+    {0x0e8f, 0x3008, XBOX, false},     // "Generic xbox control (dealextreme)",                        0,                                    XTYPE_XBOX
     {0x0f0d, 0x000a, XBOX360USB, false},  // "Hori Co. DOA4 FightStick",                                  0,                                    XTYPE_XBOX360
     {0x0f0d, 0x000c, XBOX360USB, false},  // "Hori PadEX Turbo",                                          0,                                    XTYPE_XBOX360
     {0x0f0d, 0x000d, XBOX360USB, false},  // "Hori Fighting Stick EX2",                                   MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
@@ -237,10 +244,10 @@ JoystickController::product_vendor_mapping_t JoystickController::pid_vid_mapping
     {0x0f0d, 0x0151, XBOXONE, false},     // "Hori Racing Wheel Overdrive for Xbox Series X",             0,                                    XTYPE_XBOXONE
     {0x0f0d, 0x0152, XBOXONE, false},     // "Hori Racing Wheel Overdrive for Xbox Series X",             0,                                    XTYPE_XBOXONE
     {0x0f0d, 0x01b2, XBOXONE, false},     // "HORI Taiko No Tatsujin Drum Controller",                    MAP_SHARE_BUTTON,                     XTYPE_XBOXONE
-    // {0x0f30, 0x010b, XBOX, false},     // "Philips Recoil",                                            0,                                    XTYPE_XBOX
-    // {0x0f30, 0x0202, XBOX, false},     // "Joytech Advanced Controller",                               0,                                    XTYPE_XBOX
-    // {0x0f30, 0x8888, XBOX, false},     // "BigBen XBMiniPad Controller",                               0,                                    XTYPE_XBOX
-    // {0x102c, 0xff0c, XBOX, false},     // "Joytech Wireless Advanced Controller",                      0,                                    XTYPE_XBOX
+    {0x0f30, 0x010b, XBOX, false},     // "Philips Recoil",                                            0,                                    XTYPE_XBOX
+    {0x0f30, 0x0202, XBOX, false},     // "Joytech Advanced Controller",                               0,                                    XTYPE_XBOX
+    {0x0f30, 0x8888, XBOX, false},     // "BigBen XBMiniPad Controller",                               0,                                    XTYPE_XBOX
+    {0x102c, 0xff0c, XBOX, false},     // "Joytech Wireless Advanced Controller",                      0,                                    XTYPE_XBOX
     {0x1038, 0x1430, XBOX360USB, false},  // "SteelSeries Stratus Duo",                                   0,                                    XTYPE_XBOX360
     {0x1038, 0x1431, XBOX360USB, false},  // "SteelSeries Stratus Duo",                                   0,                                    XTYPE_XBOX360
     {0x10f5, 0x7005, XBOXONE, false},     // "Turtle Beach Recon Controller",                             0,                                    XTYPE_XBOXONE
@@ -252,9 +259,9 @@ JoystickController::product_vendor_mapping_t JoystickController::pid_vid_mapping
     {0x12ab, 0x0004, XBOX360USB, false},  // "Honey Bee Xbox360 dancepad",                                MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX360
     {0x12ab, 0x0301, XBOX360USB, false},  // "PDP AFTERGLOW AX.1",                                        0,                                    XTYPE_XBOX360
     {0x12ab, 0x0303, XBOX360USB, false},  // "Mortal Kombat Klassic FightStick",                          MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
-    // {0x12ab, 0x8809, XBOX, false},     // "Xbox DDR dancepad",                                         MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
+    {0x12ab, 0x8809, XBOX, false},     // "Xbox DDR dancepad",                                         MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
     {0x1430, 0x4748, XBOX360USB, false},  // "RedOctane Guitar Hero X-plorer",                            0,                                    XTYPE_XBOX360
-    // {0x1430, 0x8888, XBOX, false},     // "TX6500+ Dance Pad (first generation)",                      MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
+    {0x1430, 0x8888, XBOX, false},     // "TX6500+ Dance Pad (first generation)",                      MAP_DPAD_TO_BUTTONS,                  XTYPE_XBOX
     {0x1430, 0xf801, XBOX360USB, false},  // "RedOctane Controller",                                      0,                                    XTYPE_XBOX360
     {0x146b, 0x0601, XBOX360USB, false},  // "BigBen Interactive XBOX 360 Controller",                    0,                                    XTYPE_XBOX360
     {0x146b, 0x0604, XBOX360USB, false},  // "Bigben Interactive DAIJA Arcade Stick",                     MAP_TRIGGERS_TO_BUTTONS,              XTYPE_XBOX360
@@ -371,10 +378,10 @@ JoystickController::product_vendor_mapping_t JoystickController::pid_vid_mapping
     {0x3537, 0x1004, XBOX360USB, false},  // "GameSir T4 Kaleid",                                         0,                                    XTYPE_XBOX360
     {0x3537, 0x1010, XBOXONE, false},     // "GameSir G7 SE",                                             0,                                    XTYPE_XBOXONE
     {0x366c, 0x0005, XBOXONE, false},     // "ByoWave Proteus Controller",                                MAP_SHARE_BUTTON,                     XTYPE_XBOXONE,  FLAG_DELAY_INIT
-    // {0x3767, 0x0101, XBOX, false},     // "Fanatec Speedster 3 Forceshock Wheel",                      0,                                    XTYPE_XBOX
+    {0x3767, 0x0101, XBOX, false},     // "Fanatec Speedster 3 Forceshock Wheel",                      0,                                    XTYPE_XBOX
     {0x413d, 0x2104, XBOX360USB, false},  // "Black Shark Green Ghost Gamepad",                           0,                                    XTYPE_XBOX360
-    // {0xffff, 0xffff, XBOX, false},     // "Chinese-made Xbox Controller",                              0,                                    XTYPE_XBOX
-    // {0x0000, 0x0000, UNKNOWN, false},  // "Generic X-Box pad",                                         0,                                    XTYPE_UNKNOWN
+    {0xffff, 0xffff, XBOX, false},     // "Chinese-made Xbox Controller",                              0,                                    XTYPE_XBOX
+    {0x0000, 0x0000, UNKNOWN, false},  // "Generic X-Box pad",                                         0,                                    XTYPE_UNKNOWN
 };
 
 
