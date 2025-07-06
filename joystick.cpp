@@ -87,6 +87,7 @@ JoystickController::product_vendor_mapping_t JoystickController::pid_vid_mapping
 
     {0x0810, 0xe501, SNES, true},  // INNEXT SNES USB gamepad
 
+    {0x0f0d, 0x0066, N64, true},  // Retro Fighters Brawler64 v2
 
 // stolen from https://github.com/torvalds/linux/blob/master/drivers/input/joystick/xpad.c#L134
     /* Please keep this list sorted by vendor and product ID. */
